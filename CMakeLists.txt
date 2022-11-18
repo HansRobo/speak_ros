@@ -11,9 +11,13 @@ rclcpp_components_register_nodes(${PROJECT_NAME} "speak_ros::SpeakROS")
 ament_auto_add_executable(${PROJECT_NAME}_node src/${PROJECT_NAME}_node.cpp)
 target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME})
 
-if(BUILD_TESTING)
+rosidl_generate_interfaces(${PROJECT_NAME}
+  action/speak.action
+  DEPENDENCIES builtin_interfaces)
+
+if (BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
-endif()
+endif ()
 
 ament_auto_package()
