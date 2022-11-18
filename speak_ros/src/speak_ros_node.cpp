@@ -18,7 +18,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "speak_ros/speak_ros.hpp"
 
-int main(int argc, char** argv)
+int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
 

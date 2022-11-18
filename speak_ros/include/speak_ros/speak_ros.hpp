@@ -33,21 +33,17 @@ class SpeakROS : public rclcpp::Node
 public:
   explicit SpeakROS(rclcpp::NodeOptions options) : rclcpp::Node("speak_ros", options)
   {
-    pluginlib::ClassLoader<speak_ros::SpeakROSPlugin> class_loader("speak_ros",
-                                                                   "speak_ros::SpeakROSPlugin");
-    try
-    {
+    pluginlib::ClassLoader<speak_ros::SpeakROSPlugin> class_loader(
+      "speak_ros", "speak_ros::SpeakROSPlugin");
+    try {
       std::string plugin_name = "default";
       plugin = class_loader.createUniqueInstance(plugin_name);
-    }
-    catch (pluginlib::PluginlibException& ex)
-    {
+    } catch (pluginlib::PluginlibException & ex) {
       return;
     }
     auto parameters_default = plugin->getParametersDefault();
     std::vector<std::pair<std::string, std::string>> parameters;
-    for (const auto& parameter : parameters_default)
-    {
+    for (const auto & parameter : parameters_default) {
       std::pair<std::string, std::string> name_and_value;
       declare_parameter<std::string>(parameter.name, parameter.default_value);
       get_parameter<std::string>(parameter.name, name_and_value.second);
@@ -58,56 +54,54 @@ public:
 
     using Speak = speak_ros_interfaces::action::Speak;
     server = rclcpp_action::create_server<Speak>(
-        get_node_base_interface(), get_node_clock_interface(), get_node_logging_interface(),
-        get_node_waitables_interface(), "speak",
-        [](const rclcpp_action::GoalUUID, std::shared_ptr<const Speak::Goal> goal)
-            -> rclcpp_action::GoalResponse { return rclcpp_action::GoalResponse::REJECT; },
-        [](const std::shared_ptr<rclcpp_action::ServerGoalHandle<Speak>> goal_handle)
-            -> rclcpp_action::CancelResponse { return rclcpp_action::CancelResponse::REJECT; },
-        [this](const std::shared_ptr<rclcpp_action::ServerGoalHandle<Speak>> goal_handle) -> void {
-          std::thread([goal_handle, this]() {
-            const auto goal = goal_handle->get_goal();
-            auto feedback = std::make_shared<Speak::Feedback>();
+      get_node_base_interface(), get_node_clock_interface(), get_node_logging_interface(),
+      get_node_waitables_interface(), "speak",
+      [](const rclcpp_action::GoalUUID, std::shared_ptr<const Speak::Goal> goal)
+        -> rclcpp_action::GoalResponse { return rclcpp_action::GoalResponse::REJECT; },
+      [](const std::shared_ptr<rclcpp_action::ServerGoalHandle<Speak>> goal_handle)
+        -> rclcpp_action::CancelResponse { return rclcpp_action::CancelResponse::REJECT; },
+      [this](const std::shared_ptr<rclcpp_action::ServerGoalHandle<Speak>> goal_handle) -> void {
+        std::thread([goal_handle, this]() {
+          const auto goal = goal_handle->get_goal();
+          auto feedback = std::make_shared<Speak::Feedback>();
 
-            feedback->state = Speak::Feedback::GENERATING;
-            goal_handle->publish_feedback(feedback);
+          feedback->state = Speak::Feedback::GENERATING;
+          goal_handle->publish_feedback(feedback);
 
-            generateSoundFile();
+          generateSoundFile();
 
-            std::promise<void> play_finish_notifier;
-            std::future<void> play_finish_monitor = play_finish_notifier.get_future();
+          std::promise<void> play_finish_notifier;
+          std::future<void> play_finish_monitor = play_finish_notifier.get_future();
 
-            auto play_start_time = now();
-            auto play_thread = std::thread([&play_finish_notifier, this]() {
-              playSoundFile();
-              play_finish_notifier.set_value();
-            });
+          auto play_start_time = now();
+          auto play_thread = std::thread([&play_finish_notifier, this]() {
+            playSoundFile();
+            play_finish_notifier.set_value();
+          });
 
-            using std::literals::chrono_literals::operator""s;
+          using std::literals::chrono_literals::operator""s;
 
-            for (rclcpp::FutureReturnCode return_code;
-                 return_code != rclcpp::FutureReturnCode::SUCCESS;
-                 return_code = rclcpp::spin_until_future_complete(this->get_node_base_interface(),
-                                                                  play_finish_monitor, 0.5s))
-            {
-              if (return_code == rclcpp::FutureReturnCode::INTERRUPTED)
-              {
-                auto result = std::make_shared<Speak::Result>();
-                result->elapsed_time = now() - play_start_time;
-                goal_handle->abort(result);
-                play_thread.join();
-                return;
-              }
-              feedback->state = Speak::Feedback::PLAYING;
-              goal_handle->publish_feedback(feedback);
+          for (rclcpp::FutureReturnCode return_code;
+               return_code != rclcpp::FutureReturnCode::SUCCESS;
+               return_code = rclcpp::spin_until_future_complete(
+                 this->get_node_base_interface(), play_finish_monitor, 0.5s)) {
+            if (return_code == rclcpp::FutureReturnCode::INTERRUPTED) {
+              auto result = std::make_shared<Speak::Result>();
+              result->elapsed_time = now() - play_start_time;
+              goal_handle->abort(result);
+              play_thread.join();
+              return;
             }
+            feedback->state = Speak::Feedback::PLAYING;
+            goal_handle->publish_feedback(feedback);
+          }
 
-            play_thread.join();
-            auto result = std::make_shared<Speak::Result>();
-            result->elapsed_time = now() - play_start_time;
-            goal_handle->succeed(result);
-          }).detach();
-        });
+          play_thread.join();
+          auto result = std::make_shared<Speak::Result>();
+          result->elapsed_time = now() - play_start_time;
+          goal_handle->succeed(result);
+        }).detach();
+      });
   }
 
   void generateSoundFile()

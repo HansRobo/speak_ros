@@ -33,15 +33,10 @@ class SpeakROSPlugin
 {
 public:
   virtual std::string getPluginName() const = 0;
-  virtual std::filesystem::path generateSoundFile(const std::filesystem::path output_directory,
-                                                  const std::string file_name) = 0;
-  virtual std::vector<Parameter> getParametersDefault() const
-  {
-    return std::vector<Parameter>();
-  }
-  virtual void setParameters(std::vector<std::pair<std::string, std::string>> parameters)
-  {
-  }
+  virtual std::filesystem::path generateSoundFile(
+    const std::filesystem::path output_directory, const std::string file_name) = 0;
+  virtual std::vector<Parameter> getParametersDefault() const { return std::vector<Parameter>(); }
+  virtual void setParameters(std::vector<std::pair<std::string, std::string>> parameters) {}
 };
 }  // namespace speak_ros
 
