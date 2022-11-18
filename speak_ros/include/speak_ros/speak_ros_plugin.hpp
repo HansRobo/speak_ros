@@ -17,6 +17,7 @@
 
 #include <filesystem>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace speak_ros
@@ -38,7 +39,9 @@ public:
   {
     return std::vector<Parameter>();
   }
-  virtual void setParameters(std::vector<std::pair<std::string, std::string>> parameters){};
+  virtual void setParameters(std::vector<std::pair<std::string, std::string>> parameters)
+  {
+  }
 };
 }  // namespace speak_ros
 
