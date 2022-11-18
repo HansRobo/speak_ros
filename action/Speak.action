@@ -1,8 +1,0 @@
-string text
-float64 speed_rate
----
-builtin_interfaces/Duration elapsed_time
----
-uint8 GENERATING=0
-uint8 PLAYING=1
-uint8 state

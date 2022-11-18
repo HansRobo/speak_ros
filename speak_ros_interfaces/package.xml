@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="3">
-    <name>speak_ros</name>
+    <name>speak_ros_interfaces</name>
     <version>0.0.1</version>
-    <description>generic speaker ros package</description>
+    <description>interfaces for speak_ros</description>
 
     <maintainer email="pythagora.yoshimoto@gmail.com">Kotaro Yoshimoto</maintainer>
     <author email="pythagora.yoshimoto@gmail.com">Kotaro Yoshimoto</author>
@@ -15,9 +15,6 @@
     <exec_depend>rosidl_default_runtime</exec_depend>
 
     <depend>builtin_interfaces</depend>
-    <depend>rclcpp</depend>
-    <depend>rclcpp_components</depend>
-    <depend>pluginlib</depend>
 
     <member_of_group>rosidl_interface_packages</member_of_group>
 
