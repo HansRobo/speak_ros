@@ -16,5 +16,4 @@
 
 namespace speak_ros
 {
-
 }  // end namespace speak_ros

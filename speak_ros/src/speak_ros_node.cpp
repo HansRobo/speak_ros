@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <rclcpp/executors/single_threaded_executor.hpp>
-#include <rclcpp/rclcpp.hpp>
+#include <memory>
 
+#include "rclcpp/executors/single_threaded_executor.hpp"
+#include "rclcpp/rclcpp.hpp"
 #include "speak_ros/speak_ros.hpp"
 
-int main(int argc, char** argv)
+int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
 
