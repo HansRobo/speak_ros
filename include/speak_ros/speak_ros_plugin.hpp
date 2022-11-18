@@ -12,24 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SPEAK_ROS__SPEAK_ROS_HPP_
-#define SPEAK_ROS__SPEAK_ROS_HPP_
+#ifndef SPEAK_ROS__SPEAK_ROS_PLUGIN_HPP_
+#define SPEAK_ROS__SPEAK_ROS_PLUGIN_HPP_
 
-#include <memory>
+#include <filesystem>
 #include <string>
-
-#include <rclcpp/rclcpp.hpp>
+#include <vector>
 
 namespace speak_ros
 {
-class SpeakROS : public rclcpp::Node
+struct Parameter
 {
-public:
-  SpeakROS();
-
-private:
+  std::string name;
+  std::string description;
+  std::string default_value;
 };
 
+class SpeakROSPlugin
+{
+public:
+  virtual std::string getPluginName() const = 0;
+  virtual bool generateSoundFile(const std::filesystem::path output_directory, const std::string file_name) = 0;
+  virtual std::vector<Parameter> getParametersDefault() const
+  {
+    return std::vector<Parameter>();
+  }
+  virtual void setParameters(std::vector<std::pair<std::string, std::string>> parameters){};
+};
 }  // namespace speak_ros
 
-#endif  // SPEAK_ROS__SPEAK_ROS_HPP_
+#endif  // SPEAK_ROS__SPEAK_ROS_PLUGIN_HPP_

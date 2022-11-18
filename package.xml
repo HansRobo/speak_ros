@@ -17,6 +17,7 @@
     <depend>builtin_interfaces</depend>
     <depend>rclcpp</depend>
     <depend>rclcpp_components</depend>
+    <depend>pluginlib</depend>
 
     <member_of_group>rosidl_interface_packages</member_of_group>
 
