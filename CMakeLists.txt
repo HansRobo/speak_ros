@@ -26,7 +26,7 @@ endforeach()
 # Declare a C++ library
 add_library(
   ${PROJECT_NAME}
-  src/speak_r_o_s.cpp
+  src/speak_ros.cpp
 )
 ament_target_dependencies(${PROJECT_NAME} ${THIS_PACKAGE_INCLUDE_DEPENDS})
 target_include_directories(${PROJECT_NAME}
@@ -37,7 +37,7 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 # Declare a C++ executable
 add_executable(
   ${PROJECT_NAME}_node
-  src/main.cpp
+  src/speak_ros_node.cpp
 )
 target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME})
 ament_target_dependencies(${PROJECT_NAME}_node ${THIS_PACKAGE_INCLUDE_DEPENDS})

@@ -7,17 +7,10 @@
     <maintainer email="pythagora.yoshimoto@gmail.com">Kotaro Yoshimoto</maintainer>
     <author email="pythagora.yoshimoto@gmail.com">Kotaro Yoshimoto</author>
 
-    <license>BSD</license>
-
-    <url type="website">https://github.com/PickNikRobotics/speak_ros</url>
-    <url type="bugtracker">https://github.com/PickNikRobotics/speak_ros/issues</url>
-    <url type="repository">https://github.com/PickNikRobotics/speak_ros/</url>
+    <license>Apache 2.0</license>
 
     <buildtool_depend>ament_cmake</buildtool_depend>s
-    <buildtool_depend>eigen3_cmake_module</buildtool_depend>
-    <buildtool_export_depend>eigen3_cmake_module</buildtool_export_depend>
 
-    <depend>eigen</depend>
     <depend>rclcpp</depend>
 
     <test_depend>ament_lint_auto</test_depend>
