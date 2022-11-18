@@ -12,9 +12,9 @@ ament_auto_add_executable(${PROJECT_NAME}_node src/${PROJECT_NAME}_node.cpp)
 target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME})
 
 
-if (BUILD_TESTING)
+if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
-endif ()
+endif()
 
 ament_auto_package()
