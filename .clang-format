@@ -1,6 +1,6 @@
 ---
 BasedOnStyle:  Google
-ColumnLimit:    120
+ColumnLimit:    100
 MaxEmptyLinesToKeep: 1
 
 SortIncludes: true

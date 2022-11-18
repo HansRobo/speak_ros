@@ -17,13 +17,14 @@
 
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
-#include <pluginlib/class_loader.hpp>
-#include <rclcpp/rclcpp.hpp>
-#include <rclcpp_action/rclcpp_action.hpp>
-#include <speak_ros_interfaces/action/speak.hpp>
-
+#include "pluginlib/class_loader.hpp"
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp_action/rclcpp_action.hpp"
 #include "speak_ros/speak_ros_plugin.hpp"
+#include "speak_ros_interfaces/action/speak.hpp"
 
 namespace speak_ros
 {
@@ -32,7 +33,8 @@ class SpeakROS : public rclcpp::Node
 public:
   explicit SpeakROS(rclcpp::NodeOptions options) : rclcpp::Node("speak_ros", options)
   {
-    pluginlib::ClassLoader<speak_ros::SpeakROSPlugin> class_loader("speak_ros", "speak_ros::SpeakROSPlugin");
+    pluginlib::ClassLoader<speak_ros::SpeakROSPlugin> class_loader("speak_ros",
+                                                                   "speak_ros::SpeakROSPlugin");
     try
     {
       std::string plugin_name = "default";
@@ -58,12 +60,10 @@ public:
     server = rclcpp_action::create_server<Speak>(
         get_node_base_interface(), get_node_clock_interface(), get_node_logging_interface(),
         get_node_waitables_interface(), "speak",
-        [](const rclcpp_action::GoalUUID, std::shared_ptr<const Speak::Goal> goal) -> rclcpp_action::GoalResponse {
-          return rclcpp_action::GoalResponse::REJECT;
-        },
-        [](const std::shared_ptr<rclcpp_action::ServerGoalHandle<Speak>> goal_handle) -> rclcpp_action::CancelResponse {
-          return rclcpp_action::CancelResponse::REJECT;
-        },
+        [](const rclcpp_action::GoalUUID, std::shared_ptr<const Speak::Goal> goal)
+            -> rclcpp_action::GoalResponse { return rclcpp_action::GoalResponse::REJECT; },
+        [](const std::shared_ptr<rclcpp_action::ServerGoalHandle<Speak>> goal_handle)
+            -> rclcpp_action::CancelResponse { return rclcpp_action::CancelResponse::REJECT; },
         [this](const std::shared_ptr<rclcpp_action::ServerGoalHandle<Speak>> goal_handle) -> void {
           std::thread([goal_handle, this]() {
             const auto goal = goal_handle->get_goal();
@@ -83,11 +83,12 @@ public:
               play_finish_notifier.set_value();
             });
 
-            using namespace std::literals::chrono_literals;
+            using std::literals::chrono_literals::operator""s;
 
-            for (rclcpp::FutureReturnCode return_code; return_code != rclcpp::FutureReturnCode::SUCCESS;
-                 return_code =
-                     rclcpp::spin_until_future_complete(this->get_node_base_interface(), play_finish_monitor, 0.5s))
+            for (rclcpp::FutureReturnCode return_code;
+                 return_code != rclcpp::FutureReturnCode::SUCCESS;
+                 return_code = rclcpp::spin_until_future_complete(this->get_node_base_interface(),
+                                                                  play_finish_monitor, 0.5s))
             {
               if (return_code == rclcpp::FutureReturnCode::INTERRUPTED)
               {
