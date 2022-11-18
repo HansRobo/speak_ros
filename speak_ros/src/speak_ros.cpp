@@ -12,24 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SPEAK_ROS__SPEAK_ROS_HPP_
-#define SPEAK_ROS__SPEAK_ROS_HPP_
-
-#include <memory>
-#include <string>
-
-#include <rclcpp/rclcpp.hpp>
+#include "speak_ros/speak_ros.hpp"
 
 namespace speak_ros
 {
-class SpeakROS : public rclcpp::Node
-{
-public:
-  SpeakROS();
 
-private:
-};
-
-}  // namespace speak_ros
-
-#endif  // SPEAK_ROS__SPEAK_ROS_HPP_
+}  // end namespace speak_ros

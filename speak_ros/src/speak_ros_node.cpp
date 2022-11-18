@@ -12,13 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <speak_ros/speak_ros.hpp>
+#include <rclcpp/executors/single_threaded_executor.hpp>
+#include <rclcpp/rclcpp.hpp>
 
-namespace speak_ros
+#include "speak_ros/speak_ros.hpp"
+
+int main(int argc, char** argv)
 {
-  SpeakROS::SpeakROS() : Node("speak_ros")
-{
-    RCLCPP_INFO(get_logger(), "Initializing SpeakROS...");
+  rclcpp::init(argc, argv);
+
+  auto node = std::make_shared<speak_ros::SpeakROS>(rclcpp::NodeOptions());
+
+  rclcpp::executors::SingleThreadedExecutor exec;
+  exec.add_node(node);
+
+  exec.spin();
+  rclcpp::shutdown();
+  return 0;
 }
-
-}  // end namespace speak_ros
