@@ -23,7 +23,7 @@
 #include "pluginlib/class_loader.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
-#include "speak_ros/speak_ros_plugin.hpp"
+#include "speak_ros/speak_ros_plugin_base.hpp"
 #include "speak_ros_interfaces/action/speak.hpp"
 
 namespace speak_ros
@@ -33,33 +33,42 @@ class SpeakROS : public rclcpp::Node
 public:
   explicit SpeakROS(rclcpp::NodeOptions options) : rclcpp::Node("speak_ros", options)
   {
-    pluginlib::ClassLoader<speak_ros::SpeakROSPlugin> class_loader(
-      "speak_ros", "speak_ros::SpeakROSPlugin");
+    pluginlib::ClassLoader<speak_ros::SpeakROSPluginBase> class_loader(
+      "speak_ros", "speak_ros::SpeakROSPluginBase");
+
+    std::string plugin_name;
+    declare_parameter<std::string>("plugin_name", "open_jtalk_plugin::OpenJTalkPlugin");
+    get_parameter("plugin_name", plugin_name);
+
     try {
-      std::string plugin_name = "default";
       plugin = class_loader.createUniqueInstance(plugin_name);
     } catch (pluginlib::PluginlibException & ex) {
+      RCLCPP_ERROR_STREAM(get_logger(), "Can't find plugin : " << plugin_name);
       return;
     }
+
     auto parameters_default = plugin->getParametersDefault();
-    std::vector<std::pair<std::string, std::string>> parameters;
+    std::unordered_map<std::string, std::string> parameters;
+
     for (const auto & parameter : parameters_default) {
-      std::pair<std::string, std::string> name_and_value;
+      std::string parameter_value;
       declare_parameter<std::string>(parameter.name, parameter.default_value);
-      get_parameter<std::string>(parameter.name, name_and_value.second);
-      name_and_value.first = parameter.name;
-      parameters.push_back(name_and_value);
+      get_parameter<std::string>(parameter.name, parameter_value);
+      parameters[parameter.name] = parameter_value;
     }
-    plugin->setParameters(parameters);
+    plugin->importParameters(parameters);
 
     using Speak = speak_ros_interfaces::action::Speak;
     server = rclcpp_action::create_server<Speak>(
       get_node_base_interface(), get_node_clock_interface(), get_node_logging_interface(),
       get_node_waitables_interface(), "speak",
+      // handle goal
       [](const rclcpp_action::GoalUUID, std::shared_ptr<const Speak::Goal> goal)
         -> rclcpp_action::GoalResponse { return rclcpp_action::GoalResponse::REJECT; },
+      // handle cancel
       [](const std::shared_ptr<rclcpp_action::ServerGoalHandle<Speak>> goal_handle)
         -> rclcpp_action::CancelResponse { return rclcpp_action::CancelResponse::REJECT; },
+      // handle accepted
       [this](const std::shared_ptr<rclcpp_action::ServerGoalHandle<Speak>> goal_handle) -> void {
         std::thread([goal_handle, this]() {
           const auto goal = goal_handle->get_goal();
@@ -68,7 +77,7 @@ public:
           feedback->state = Speak::Feedback::GENERATING;
           goal_handle->publish_feedback(feedback);
 
-          generateSoundFile();
+          generateSoundFile(goal->text);
 
           std::promise<void> play_finish_notifier;
           std::future<void> play_finish_monitor = play_finish_notifier.get_future();
@@ -104,21 +113,17 @@ public:
       });
   }
 
-  void generateSoundFile()
+  void generateSoundFile(std::string input_text)
   {
-    generated_sound_path = plugin->generateSoundFile(base_directory, "generated");
+    generated_sound_path = plugin->generateSoundFile(input_text, base_directory, "generated");
   }
 
-  void playSoundFile()
-  {
-    std::string command = "aplay " + generated_sound_path.string();
-    system(command.c_str());
-  }
+  void playSoundFile() { plugin->playSoundFile(generated_sound_path); }
 
 private:
   std::filesystem::path base_directory = "/tmp/speak_ros";
   std::filesystem::path generated_sound_path;
-  pluginlib::UniquePtr<speak_ros::SpeakROSPlugin> plugin = nullptr;
+  pluginlib::UniquePtr<speak_ros::SpeakROSPluginBase> plugin = nullptr;
   rclcpp_action::Server<speak_ros_interfaces::action::Speak>::SharedPtr server;
 };
 

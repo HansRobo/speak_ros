@@ -17,6 +17,7 @@
 
 #include <filesystem>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -29,14 +30,20 @@ struct Parameter
   std::string default_value;
 };
 
-class SpeakROSPlugin
+class SpeakROSPluginBase
 {
 public:
-  virtual std::string getPluginName() const = 0;
+  [[nodiscard]] virtual std::string getPluginName() const = 0;
   virtual std::filesystem::path generateSoundFile(
-    const std::filesystem::path output_directory, const std::string file_name) = 0;
+    const std::string input_text, const std::filesystem::path output_directory,
+    const std::string file_name) = 0;
   virtual std::vector<Parameter> getParametersDefault() const { return std::vector<Parameter>(); }
-  virtual void setParameters(std::vector<std::pair<std::string, std::string>> parameters) {}
+  virtual void importParameters(const std::unordered_map<std::string, std::string> & parameters) {}
+  virtual void playSoundFile(std::filesystem::path generated_sound_path)
+  {
+    std::string command = "aplay " + generated_sound_path.string();
+    system(command.c_str());
+  }
 };
 }  // namespace speak_ros
 

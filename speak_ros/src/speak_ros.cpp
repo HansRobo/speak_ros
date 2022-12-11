@@ -17,3 +17,6 @@
 namespace speak_ros
 {
 }  // end namespace speak_ros
+
+#include <rclcpp_components/register_node_macro.hpp>
+RCLCPP_COMPONENTS_REGISTER_NODE(speak_ros::SpeakROS)
