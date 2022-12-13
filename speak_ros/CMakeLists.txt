@@ -14,6 +14,9 @@ target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME})
 ament_auto_add_executable(list_plugins src/list_plugins.cpp)
 target_link_libraries(list_plugins ${PROJECT_NAME})
 
+ament_auto_add_executable(test_client src/speak_ros_test_client.cpp)
+target_link_libraries(test_client ${PROJECT_NAME})
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
