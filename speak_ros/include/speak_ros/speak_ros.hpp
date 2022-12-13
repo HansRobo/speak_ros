@@ -47,6 +47,8 @@ public:
       return;
     }
 
+    RCLCPP_INFO_STREAM(get_logger(), "Using plugin : " << plugin_name);
+
     auto parameters_default = plugin->getParametersDefault();
     std::unordered_map<std::string, std::string> parameters;
 
@@ -64,7 +66,7 @@ public:
       get_node_waitables_interface(), "speak",
       // handle goal
       [](const rclcpp_action::GoalUUID, std::shared_ptr<const Speak::Goal> goal)
-        -> rclcpp_action::GoalResponse { return rclcpp_action::GoalResponse::REJECT; },
+        -> rclcpp_action::GoalResponse { return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE; },
       // handle cancel
       [](const std::shared_ptr<rclcpp_action::ServerGoalHandle<Speak>> goal_handle)
         -> rclcpp_action::CancelResponse { return rclcpp_action::CancelResponse::REJECT; },
