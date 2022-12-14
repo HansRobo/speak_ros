@@ -117,6 +117,7 @@ public:
 
   void generateSoundFile(std::string input_text)
   {
+    std::filesystem::create_directory(base_directory);
     generated_sound_path = plugin->generateSoundFile(input_text, base_directory, "generated");
   }
 
