@@ -41,9 +41,9 @@ public:
     get_parameter("plugin_name", plugin_name);
 
     try {
-      plugin = class_loader.createUniqueInstance(plugin_name);
+      plugin = class_loader.createSharedInstance(plugin_name);
     } catch (pluginlib::PluginlibException & ex) {
-      RCLCPP_ERROR_STREAM(get_logger(), "Can't find plugin : " << plugin_name);
+      RCLCPP_ERROR_STREAM(get_logger(), "Can't find plugin : " << plugin_name << " : " << ex.what());
       return;
     }
 
@@ -125,7 +125,7 @@ public:
 private:
   std::filesystem::path base_directory = "/tmp/speak_ros";
   std::filesystem::path generated_sound_path;
-  pluginlib::UniquePtr<speak_ros::SpeakROSPluginBase> plugin = nullptr;
+  std::shared_ptr<speak_ros::SpeakROSPluginBase> plugin = nullptr;
   rclcpp_action::Server<speak_ros_interfaces::action::Speak>::SharedPtr server;
 };
 
