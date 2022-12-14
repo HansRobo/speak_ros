@@ -43,7 +43,8 @@ public:
     try {
       plugin = class_loader.createSharedInstance(plugin_name);
     } catch (pluginlib::PluginlibException & ex) {
-      RCLCPP_ERROR_STREAM(get_logger(), "Can't find plugin : " << plugin_name << " : " << ex.what());
+      RCLCPP_ERROR_STREAM(
+        get_logger(), "Can't find plugin : " << plugin_name << " : " << ex.what());
       return;
     }
 

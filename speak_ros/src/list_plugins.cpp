@@ -27,7 +27,8 @@ int main(int argc, char ** argv)
     "speak_ros", "speak_ros::SpeakROSPluginBase");
 
   auto found_libraries = class_loader.getDeclaredClasses();
-  RCLCPP_INFO_STREAM(rclcpp::get_logger("list_plugins"), "Found " << found_libraries.size() << " plugins");
+  RCLCPP_INFO_STREAM(
+    rclcpp::get_logger("list_plugins"), "Found " << found_libraries.size() << " plugins");
   for (auto lib : found_libraries) {
     RCLCPP_INFO_STREAM(rclcpp::get_logger("list_plugins"), "plugin : " << lib);
   }
