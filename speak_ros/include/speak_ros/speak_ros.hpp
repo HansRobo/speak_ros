@@ -36,7 +36,6 @@ public:
     pluginlib::ClassLoader<speak_ros::SpeakROSPluginBase> class_loader(
       "speak_ros", "speak_ros::SpeakROSPluginBase");
 
-    std::string plugin_name;
     declare_parameter<std::string>("plugin_name", "open_jtalk_plugin::OpenJTalkPlugin");
     get_parameter("plugin_name", plugin_name);
 
@@ -48,18 +47,11 @@ public:
       return;
     }
 
+    plugin->setParameterInterface(get_node_parameters_interface());
+
     RCLCPP_INFO_STREAM(get_logger(), "Using plugin : " << plugin_name);
 
-    auto parameters_default = plugin->getParametersDefault();
-    std::unordered_map<std::string, std::string> parameters;
-
-    for (const auto & parameter : parameters_default) {
-      std::string parameter_value;
-      declare_parameter<std::string>(parameter.name, parameter.default_value);
-      get_parameter<std::string>(parameter.name, parameter_value);
-      parameters[parameter.name] = parameter_value;
-    }
-    plugin->importParameters(parameters);
+    plugin->updateParameters(true);
 
     using Speak = speak_ros_interfaces::action::Speak;
     server = rclcpp_action::create_server<Speak>(
@@ -129,6 +121,7 @@ private:
   std::filesystem::path generated_sound_path;
   std::shared_ptr<speak_ros::SpeakROSPluginBase> plugin = nullptr;
   rclcpp_action::Server<speak_ros_interfaces::action::Speak>::SharedPtr server;
+  std::string plugin_name;
 };
 
 }  // namespace speak_ros
