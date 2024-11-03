@@ -23,12 +23,13 @@ jobs:
           - CI_NAME: build-and-test
           - CI_NAME: clang-tidy
             CLANG_TIDY: true
+          - rosdistro: [humble, jazzy]
 
     env:
       CCACHE_DIR: /github/home/.ccache
       CXXFLAGS: "-Wall -Wextra -Wwrite-strings -Wunreachable-code -Wpointer-arith -Wredundant-decls"
       
-      ROS_DISTRO: galactic
+      ROS_DISTRO: ${{ matrix.rosdistro }}
       ROS_REPO: main
       
     runs-on: ubuntu-latest
