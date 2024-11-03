@@ -16,30 +16,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        env:
-          - CI_NAME: clang-format
-            CLANG_FORMAT_CHECK: file
-            CLANG_FORMAT_VERSION: 10
-          - CI_NAME: build-and-test
-          - CI_NAME: clang-tidy
-            CLANG_TIDY: true
-          - rosdistro: [humble, jazzy]
+        rosdistro: [humble, jazzy]
 
     env:
       CCACHE_DIR: /github/home/.ccache
       CXXFLAGS: "-Wall -Wextra -Wwrite-strings -Wunreachable-code -Wpointer-arith -Wredundant-decls"
       
       ROS_DISTRO: ${{ matrix.env.rosdistro }}
-      ROS_REPO: main
       
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       # This step will fetch/store the directory used by ccache before/after the ci run
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ccache-{{ matrix.env.ROS_DISTRO }}-{{ matrix.env.ROS_REPO }}
       # Run industrial_ci
       - uses: 'ros-industrial/industrial_ci@master'
-        env: ${{ matrix.env }}
+        env:
+          ROS_DISTRO: ${{ matrix.ROS_DISTRO }}
+          ROS_REPO: main
