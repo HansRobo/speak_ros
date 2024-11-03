@@ -1,7 +1,7 @@
 # This config uses industrial_ci (https://github.com/ros-industrial/industrial_ci.git).
 # For troubleshooting, see readme (https://github.com/ros-industrial/industrial_ci/blob/master/README.rst)
 
-name: Build and Test (galactic)
+name: Build and Test
 
 # This determines when this workflow is run
 on:
@@ -29,7 +29,7 @@ jobs:
       CCACHE_DIR: /github/home/.ccache
       CXXFLAGS: "-Wall -Wextra -Wwrite-strings -Wunreachable-code -Wpointer-arith -Wredundant-decls"
       
-      ROS_DISTRO: ${{ matrix.rosdistro }}
+      ROS_DISTRO: ${{ matrix.env.rosdistro }}
       ROS_REPO: main
       
     runs-on: ubuntu-latest
