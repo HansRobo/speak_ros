@@ -15,13 +15,14 @@
 #ifndef SPEAK_ROS__SPEAK_ROS_PLUGIN_HPP_
 #define SPEAK_ROS__SPEAK_ROS_PLUGIN_HPP_
 
-#include <filesystem>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <variant>
 #include <vector>
+
+#include "speak_ros/audio_types.hpp"
 
 namespace speak_ros
 {
@@ -42,19 +43,28 @@ public:
   }
 
   [[nodiscard]] virtual std::string getPluginName() const = 0;
-  virtual std::filesystem::path generateSoundFile(
-    const std::string input_text, const std::filesystem::path output_directory,
-    const std::string file_name) = 0;
+
+  /**
+   * @brief Get audio format output by the plugin
+   * @return Audio format information
+   */
+  virtual AudioFormat getAudioFormat() const = 0;
+
+  /**
+   * @brief Synthesize text to speech and return via callback per chunk
+   * @param text Text to synthesize
+   * @param callback Callback to receive audio chunks (return false to request abort)
+   * @param cancel_token Cancellation request token (abort if true)
+   */
+  virtual void synthesize(
+    const std::string & text,
+    AudioChunkCallback callback,
+    CancelToken cancel_token) = 0;
+
   virtual std::vector<Parameter> getParametersDefault() const { return std::vector<Parameter>(); }
   virtual void importParameters(
     const std::unordered_map<std::string, std::variant<int, double, std::string>> & parameters)
   {
-  }
-
-  virtual void playSoundFile(std::filesystem::path generated_sound_path)
-  {
-    std::string command = "aplay " + generated_sound_path.string();
-    system(command.c_str());
   }
 
   void updateParameters(bool declare_parameters = false)
