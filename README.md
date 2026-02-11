@@ -19,12 +19,14 @@ The core package loads TTS plugins dynamically and manages the synthesis pipelin
 |---------|-------------|
 | `speak_ros` | Core TTS action server implementation |
 | `speak_ros_interfaces` | Custom message, service, and action definitions |
+| `speak_ros_aivis_plugin` | Aivis Speech Engine TTS plugin (Japanese) |
 | `speak_ros_open_jtalk_plugin` | Open JTalk TTS plugin (Japanese) |
 | `speak_ros_openai_tts_plugin` | OpenAI TTS API plugin |
 | `speak_ros_voicevox_plugin` | VOICEVOX TTS plugin (Japanese) |
 
 ## Available Plugins
 
+- **Aivis Speech Engine** - VOICEVOX-compatible Japanese synthesis with emotion control
 - **Open JTalk** - Offline Japanese speech synthesis
 - **OpenAI TTS** - High-quality cloud-based synthesis via OpenAI API
 - **VOICEVOX** - Japanese synthesis with diverse character voices
@@ -46,7 +48,7 @@ rosdep install --from-paths src --ignore-src -r -y
 ### Build
 
 ```bash
-colcon build --packages-up-to speak_ros speak_ros_open_jtalk_plugin speak_ros_openai_tts_plugin speak_ros_voicevox_plugin
+colcon build --packages-up-to speak_ros speak_ros_aivis_plugin speak_ros_open_jtalk_plugin speak_ros_openai_tts_plugin speak_ros_voicevox_plugin
 source install/setup.bash
 ```
 
@@ -60,10 +62,17 @@ Start the TTS action server with the default plugin (Open JTalk):
 ros2 run speak_ros speak_ros_node
 ```
 
-To use a different plugin, specify the `plugin_name` parameter:
+To use a different plugin, specify the `plugin` parameter:
 
 ```bash
-ros2 run speak_ros speak_ros_node --ros-args -p plugin_name:=speak_ros_openai_tts_plugin::OpenAITTSPlugin
+# OpenAI TTS
+ros2 run speak_ros speak_ros_node --ros-args -p plugin:=speak_ros_openai_tts_plugin::OpenAITTSPlugin
+
+# Aivis Speech Engine
+ros2 run speak_ros speak_ros_node --ros-args -p plugin:=aivis_plugin::AivisPlugin
+
+# VOICEVOX
+ros2 run speak_ros speak_ros_node --ros-args -p plugin:=voicevox_plugin::VoiceVoxPlugin
 ```
 
 ### Testing with the Test Client
