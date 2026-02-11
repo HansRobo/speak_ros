@@ -1,8 +1,20 @@
+# Goal
 string text
-float64 speed_rate
+ParameterOverride[] parameters
 ---
+# Result
 builtin_interfaces/Duration elapsed_time
+uint32 total_samples_played
+uint8 termination_reason
+uint8 COMPLETED=0
+uint8 CANCELLED=1
+uint8 ERROR=2
 ---
-uint8 GENERATING=0
-uint8 PLAYING=1
+# Feedback
 uint8 state
+uint8 SYNTHESIZING=0
+uint8 BUFFERING=1
+uint8 PLAYING=2
+float32 synthesis_progress
+float32 playback_seconds
+float32 buffer_level
