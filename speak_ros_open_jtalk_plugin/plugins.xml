@@ -1,0 +1,5 @@
+<library path="speak_ros_open_jtalk_plugin">
+	<class type="open_jtalk_plugin::OpenJTalkPlugin" base_class_type="speak_ros::SpeakROSPluginBase">
+		<description>OpenJTalk plugin for speak_ros</description>
+	</class>
+</library>
