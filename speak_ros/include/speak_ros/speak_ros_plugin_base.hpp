@@ -57,9 +57,7 @@ public:
    * @param cancel_token Cancellation request token (abort if true)
    */
   virtual void synthesize(
-    const std::string & text,
-    AudioChunkCallback callback,
-    CancelToken cancel_token) = 0;
+    const std::string & text, AudioChunkCallback callback, CancelToken cancel_token) = 0;
 
   virtual std::vector<Parameter> getParametersDefault() const { return std::vector<Parameter>(); }
   virtual void importParameters(
@@ -135,8 +133,8 @@ public:
 
       if (it == parameters_default.end()) {
         RCLCPP_WARN(
-          rclcpp::get_logger("speak_ros_plugin"),
-          "Unknown parameter override: '%s', ignoring", name.c_str());
+          rclcpp::get_logger("speak_ros_plugin"), "Unknown parameter override: '%s', ignoring",
+          name.c_str());
         continue;
       }
 
@@ -152,8 +150,8 @@ public:
       } catch (const std::exception & e) {
         RCLCPP_WARN(
           rclcpp::get_logger("speak_ros_plugin"),
-          "Failed to convert parameter '%s' value '%s': %s, ignoring",
-          name.c_str(), value_str.c_str(), e.what());
+          "Failed to convert parameter '%s' value '%s': %s, ignoring", name.c_str(),
+          value_str.c_str(), e.what());
       }
     }
 

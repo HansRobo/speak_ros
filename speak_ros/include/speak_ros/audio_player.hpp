@@ -15,12 +15,12 @@
 #ifndef SPEAK_ROS__AUDIO_PLAYER_HPP_
 #define SPEAK_ROS__AUDIO_PLAYER_HPP_
 
-#include "speak_ros/audio_queue.hpp"
-#include "speak_ros/audio_types.hpp"
-
 #include <atomic>
 #include <chrono>
 #include <memory>
+
+#include "speak_ros/audio_queue.hpp"
+#include "speak_ros/audio_types.hpp"
 
 // PortAudio forward declaration
 typedef void PaStream;
@@ -76,10 +76,7 @@ public:
    * @param cancel_token Cancel token
    * @param played_samples Number of played samples (for feedback)
    */
-  void play(
-    AudioQueue & queue,
-    CancelToken cancel_token,
-    std::atomic<uint64_t> & played_samples);
+  void play(AudioQueue & queue, CancelToken cancel_token, std::atomic<uint64_t> & played_samples);
 
   /**
    * @brief Stop playback immediately

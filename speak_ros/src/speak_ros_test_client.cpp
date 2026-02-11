@@ -16,6 +16,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <speak_ros_interfaces/action/speak.hpp>
+
 #include "speak_ros/parameter_validator.hpp"
 
 class TestClient : public rclcpp::Node
@@ -33,9 +34,7 @@ public:
       get_node_waitables_interface(), "/speak");
   }
 
-  void sendGoal(
-    std::string text,
-    const std::vector<ParameterOverride> & parameters = {})
+  void sendGoal(std::string text, const std::vector<ParameterOverride> & parameters = {})
   {
     using namespace std::placeholders;
 
@@ -78,18 +77,15 @@ private:
     switch (feedback->state) {
       case Speak::Feedback::SYNTHESIZING:
         RCLCPP_INFO(
-          get_logger(), "SYNTHESIZING (progress: %.1f%%)",
-          feedback->synthesis_progress * 100.0);
+          get_logger(), "SYNTHESIZING (progress: %.1f%%)", feedback->synthesis_progress * 100.0);
         break;
       case Speak::Feedback::BUFFERING:
-        RCLCPP_INFO(
-          get_logger(), "BUFFERING (buffer: %.1f%%)",
-          feedback->buffer_level * 100.0);
+        RCLCPP_INFO(get_logger(), "BUFFERING (buffer: %.1f%%)", feedback->buffer_level * 100.0);
         break;
       case Speak::Feedback::PLAYING:
         RCLCPP_INFO(
-          get_logger(), "PLAYING (%.2fs, buffer: %.1f%%)",
-          feedback->playback_seconds, feedback->buffer_level * 100.0);
+          get_logger(), "PLAYING (%.2fs, buffer: %.1f%%)", feedback->playback_seconds,
+          feedback->buffer_level * 100.0);
         break;
       default:
         RCLCPP_INFO(get_logger(), "Unknown state");
@@ -113,11 +109,8 @@ private:
     }
 
     RCLCPP_INFO(
-      get_logger(),
-      "Result: %s, elapsed: %.2fs, samples: %u",
-      termination_str,
-      rclcpp::Duration(result.result->elapsed_time).seconds(),
-      result.result->total_samples_played);
+      get_logger(), "Result: %s, elapsed: %.2fs, samples: %u", termination_str,
+      rclcpp::Duration(result.result->elapsed_time).seconds(), result.result->total_samples_played);
     rclcpp::shutdown();
   }
 };
@@ -145,7 +138,9 @@ int main(int argc, char ** argv)
         override.value = param.substr(eq_pos + 1);
         parameters.push_back(override);
       } else {
-        RCLCPP_ERROR(node->get_logger(), "Invalid parameter format: '%s'. Use --param name=value", param.c_str());
+        RCLCPP_ERROR(
+          node->get_logger(), "Invalid parameter format: '%s'. Use --param name=value",
+          param.c_str());
         return 1;
       }
     } else if (arg == "--show-schema") {

@@ -33,8 +33,7 @@ SpeakROS::SpeakROS(const rclcpp::NodeOptions & options)
   try {
     plugin_ = class_loader_.createSharedInstance(plugin_name_);
   } catch (pluginlib::PluginlibException & ex) {
-    RCLCPP_ERROR_STREAM(
-      get_logger(), "Can't find plugin : " << plugin_name_ << " : " << ex.what());
+    RCLCPP_ERROR_STREAM(get_logger(), "Can't find plugin : " << plugin_name_ << " : " << ex.what());
     return;
   }
 
@@ -44,18 +43,12 @@ SpeakROS::SpeakROS(const rclcpp::NodeOptions & options)
 
   using namespace std::placeholders;
   action_server_ = rclcpp_action::create_server<Speak>(
-    get_node_base_interface(),
-    get_node_clock_interface(),
-    get_node_logging_interface(),
-    get_node_waitables_interface(),
-    "speak",
-    std::bind(&SpeakROS::handleGoal, this, _1, _2),
-    std::bind(&SpeakROS::handleCancel, this, _1),
-    std::bind(&SpeakROS::handleAccepted, this, _1));
+    get_node_base_interface(), get_node_clock_interface(), get_node_logging_interface(),
+    get_node_waitables_interface(), "speak", std::bind(&SpeakROS::handleGoal, this, _1, _2),
+    std::bind(&SpeakROS::handleCancel, this, _1), std::bind(&SpeakROS::handleAccepted, this, _1));
 
   parameter_schema_service_ = create_service<GetParameterSchema>(
-    "get_parameter_schema",
-    std::bind(&SpeakROS::handleGetParameterSchema, this, _1, _2));
+    "get_parameter_schema", std::bind(&SpeakROS::handleGetParameterSchema, this, _1, _2));
 
   RCLCPP_INFO(get_logger(), "SpeakROS initialized");
 }
@@ -71,8 +64,7 @@ SpeakROS::~SpeakROS()
 }
 
 rclcpp_action::GoalResponse SpeakROS::handleGoal(
-  const rclcpp_action::GoalUUID & /*uuid*/,
-  std::shared_ptr<const Speak::Goal> goal)
+  const rclcpp_action::GoalUUID & /*uuid*/, std::shared_ptr<const Speak::Goal> goal)
 {
   if (goal->text.empty()) {
     RCLCPP_WARN(get_logger(), "Rejected empty text goal");
@@ -105,9 +97,7 @@ void SpeakROS::handleAccepted(const std::shared_ptr<GoalHandle> goal_handle)
     execution_thread_.join();
   }
 
-  execution_thread_ = std::thread([this, goal_handle]() {
-    executeGoal(goal_handle);
-  });
+  execution_thread_ = std::thread([this, goal_handle]() { executeGoal(goal_handle); });
 }
 
 void SpeakROS::executeGoal(std::shared_ptr<GoalHandle> goal_handle)
@@ -179,10 +169,8 @@ void SpeakROS::executeGoal(std::shared_ptr<GoalHandle> goal_handle)
       }
 
       feedback->state = Speak::Feedback::PLAYING;
-      feedback->playback_seconds =
-        static_cast<float>(played_samples.load()) / format.sample_rate;
-      feedback->buffer_level =
-        static_cast<float>(audio_queue_.size()) / 64.0f;
+      feedback->playback_seconds = static_cast<float>(played_samples.load()) / format.sample_rate;
+      feedback->buffer_level = static_cast<float>(audio_queue_.size()) / 64.0f;
       goal_handle->publish_feedback(feedback);
 
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -255,8 +243,7 @@ void SpeakROS::handleGetParameterSchema(
   }
 
   RCLCPP_INFO(
-    get_logger(), "Provided parameter schema with %zu parameters",
-    response->parameters.size());
+    get_logger(), "Provided parameter schema with %zu parameters", response->parameters.size());
 }
 
 }  // namespace speak_ros

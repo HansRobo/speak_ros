@@ -28,24 +28,18 @@ namespace
 // Read 4-byte unsigned integer in little-endian format
 uint32_t readUint32LE(const uint8_t * data)
 {
-  return static_cast<uint32_t>(data[0]) |
-         (static_cast<uint32_t>(data[1]) << 8) |
-         (static_cast<uint32_t>(data[2]) << 16) |
-         (static_cast<uint32_t>(data[3]) << 24);
+  return static_cast<uint32_t>(data[0]) | (static_cast<uint32_t>(data[1]) << 8) |
+         (static_cast<uint32_t>(data[2]) << 16) | (static_cast<uint32_t>(data[3]) << 24);
 }
 
 // Read 2-byte unsigned integer in little-endian format
 uint16_t readUint16LE(const uint8_t * data)
 {
-  return static_cast<uint16_t>(data[0]) |
-         (static_cast<uint16_t>(data[1]) << 8);
+  return static_cast<uint16_t>(data[0]) | (static_cast<uint16_t>(data[1]) << 8);
 }
 
 // Compare 4-character chunk ID
-bool matchChunkId(const uint8_t * data, const char * id)
-{
-  return std::memcmp(data, id, 4) == 0;
-}
+bool matchChunkId(const uint8_t * data, const char * id) { return std::memcmp(data, id, 4) == 0; }
 
 }  // anonymous namespace
 
@@ -139,8 +133,7 @@ std::vector<uint8_t> extractPcmData(const std::vector<uint8_t> & wav_data)
 
   std::vector<uint8_t> pcm_data(
     wav_data.begin() + header.data_offset,
-    wav_data.begin() + header.data_offset + header.data_size
-  );
+    wav_data.begin() + header.data_offset + header.data_size);
 
   return pcm_data;
 }

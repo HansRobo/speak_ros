@@ -87,13 +87,13 @@ void AudioPlayer::open(const AudioFormat & format)
   // Open stream with default output device
   PaError err = Pa_OpenDefaultStream(
     &stream_,
-    0,                      // Input channels (no recording)
-    format.channels,        // Output channels
-    sample_format,          // Sample format
-    format.sample_rate,     // Sampling rate
+    0,                             // Input channels (no recording)
+    format.channels,               // Output channels
+    sample_format,                 // Sample format
+    format.sample_rate,            // Sampling rate
     paFramesPerBufferUnspecified,  // Frames per buffer (auto)
-    nullptr,                // No callback (blocking I/O)
-    nullptr                 // No user data
+    nullptr,                       // No callback (blocking I/O)
+    nullptr                        // No user data
   );
 
   if (err != paNoError) {
@@ -110,9 +110,7 @@ void AudioPlayer::open(const AudioFormat & format)
 }
 
 void AudioPlayer::play(
-  AudioQueue & queue,
-  CancelToken cancel_token,
-  std::atomic<uint64_t> & played_samples)
+  AudioQueue & queue, CancelToken cancel_token, std::atomic<uint64_t> & played_samples)
 {
   if (stream_ == nullptr) {
     throw std::runtime_error("AudioPlayer::play() called before open()");
@@ -197,9 +195,6 @@ bool AudioPlayer::waitForDone(std::chrono::milliseconds timeout)
   return true;
 }
 
-bool AudioPlayer::isDone() const
-{
-  return is_done_.load();
-}
+bool AudioPlayer::isDone() const { return is_done_.load(); }
 
 }  // namespace speak_ros

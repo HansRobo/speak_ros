@@ -32,7 +32,7 @@ namespace speak_ros
  */
 struct ValidationResult
 {
-  bool valid;                   // Whether validation succeeded
+  bool valid;                       // Whether validation succeeded
   std::vector<std::string> errors;  // List of error messages
 
   operator bool() const { return valid; }
@@ -80,10 +80,7 @@ public:
    * @brief Constructor
    * @param node ROS 2 node
    */
-  explicit ParameterValidator(rclcpp::Node::SharedPtr node)
-  : node_(node)
-  {
-  }
+  explicit ParameterValidator(rclcpp::Node::SharedPtr node) : node_(node) {}
 
   /**
    * @brief Load parameter schema from service
@@ -99,17 +96,16 @@ public:
 
     if (!client->wait_for_service(timeout)) {
       RCLCPP_ERROR(
-        node_->get_logger(),
-        "Service '%s' not available after waiting", service_name.c_str());
+        node_->get_logger(), "Service '%s' not available after waiting", service_name.c_str());
       return false;
     }
 
     auto request = std::make_shared<GetParameterSchema::Request>();
     auto future = client->async_send_request(request);
 
-    if (rclcpp::spin_until_future_complete(node_, future, timeout) !=
-        rclcpp::FutureReturnCode::SUCCESS)
-    {
+    if (
+      rclcpp::spin_until_future_complete(node_, future, timeout) !=
+      rclcpp::FutureReturnCode::SUCCESS) {
       RCLCPP_ERROR(node_->get_logger(), "Failed to call service '%s'", service_name.c_str());
       return false;
     }
@@ -125,9 +121,7 @@ public:
       param_index_[schema_[i].name] = i;
     }
 
-    RCLCPP_INFO(
-      node_->get_logger(),
-      "Loaded parameter schema with %zu parameters", schema_.size());
+    RCLCPP_INFO(node_->get_logger(), "Loaded parameter schema with %zu parameters", schema_.size());
 
     return true;
   }
@@ -158,8 +152,7 @@ public:
       auto it = param_index_.find(name);
       if (it == param_index_.end()) {
         result.valid = false;
-        result.errors.push_back(
-          "Unknown parameter: '" + name + "'" + getSuggestion(name));
+        result.errors.push_back("Unknown parameter: '" + name + "'" + getSuggestion(name));
         continue;
       }
 
@@ -173,8 +166,7 @@ public:
         } catch (const std::exception & e) {
           result.valid = false;
           result.errors.push_back(
-            "Parameter '" + name + "' expects type 'int', but got invalid value: '" +
-            value + "'");
+            "Parameter '" + name + "' expects type 'int', but got invalid value: '" + value + "'");
         }
       } else if (type == "double") {
         try {
@@ -182,8 +174,8 @@ public:
         } catch (const std::exception & e) {
           result.valid = false;
           result.errors.push_back(
-            "Parameter '" + name + "' expects type 'double', but got invalid value: '" +
-            value + "'");
+            "Parameter '" + name + "' expects type 'double', but got invalid value: '" + value +
+            "'");
         }
       }
       // string type is always valid
@@ -218,12 +210,8 @@ public:
     RCLCPP_INFO(node_->get_logger(), "Available parameters:");
     for (const auto & param : schema_) {
       RCLCPP_INFO(
-        node_->get_logger(),
-        "  - %s (%s): %s [default: %s]",
-        param.name.c_str(),
-        param.type.c_str(),
-        param.description.c_str(),
-        param.default_value.c_str());
+        node_->get_logger(), "  - %s (%s): %s [default: %s]", param.name.c_str(),
+        param.type.c_str(), param.description.c_str(), param.default_value.c_str());
     }
   }
 
@@ -270,9 +258,9 @@ private:
       for (size_t j = 1; j <= len2; ++j) {
         int cost = (s1[i - 1] == s2[j - 1]) ? 0 : 1;
         d[i][j] = std::min({
-          d[i - 1][j] + 1,      // deletion
-          d[i][j - 1] + 1,      // insertion
-          d[i - 1][j - 1] + cost // substitution
+          d[i - 1][j] + 1,        // deletion
+          d[i][j - 1] + 1,        // insertion
+          d[i - 1][j - 1] + cost  // substitution
         });
       }
     }

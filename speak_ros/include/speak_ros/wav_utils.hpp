@@ -15,11 +15,11 @@
 #ifndef SPEAK_ROS__WAV_UTILS_HPP_
 #define SPEAK_ROS__WAV_UTILS_HPP_
 
-#include "speak_ros/audio_types.hpp"
-
 #include <cstdint>
 #include <stdexcept>
 #include <vector>
+
+#include "speak_ros/audio_types.hpp"
 
 namespace speak_ros
 {
@@ -31,11 +31,11 @@ namespace wav_utils
  */
 struct WavHeader
 {
-  uint32_t sample_rate;       // Sampling rate
-  uint16_t channels;          // Number of channels
-  uint16_t bits_per_sample;   // Bits per sample
-  uint32_t data_offset;       // Start offset of PCM data
-  uint32_t data_size;         // Size of PCM data (bytes)
+  uint32_t sample_rate;      // Sampling rate
+  uint16_t channels;         // Number of channels
+  uint16_t bits_per_sample;  // Bits per sample
+  uint32_t data_offset;      // Start offset of PCM data
+  uint32_t data_size;        // Size of PCM data (bytes)
 };
 
 /**

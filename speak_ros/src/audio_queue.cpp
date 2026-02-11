@@ -17,10 +17,7 @@
 namespace speak_ros
 {
 
-AudioQueue::AudioQueue(size_t max_chunks)
-: max_chunks_(max_chunks)
-{
-}
+AudioQueue::AudioQueue(size_t max_chunks) : max_chunks_(max_chunks) {}
 
 bool AudioQueue::push(const AudioChunk & chunk, CancelToken cancel_token)
 {
@@ -28,9 +25,7 @@ bool AudioQueue::push(const AudioChunk & chunk, CancelToken cancel_token)
 
   // Wait until there's space in the queue (or cancel/flush)
   cv_not_full_.wait(lock, [this, &cancel_token]() {
-    return queue_.size() < max_chunks_ ||
-           (cancel_token && cancel_token->load()) ||
-           flushed_;
+    return queue_.size() < max_chunks_ || (cancel_token && cancel_token->load()) || flushed_;
   });
 
   // If cancelled or flushed
@@ -49,10 +44,7 @@ std::optional<AudioChunk> AudioQueue::pop(CancelToken cancel_token)
 
   // Wait until data arrives (or cancel/done/flush)
   cv_not_empty_.wait(lock, [this, &cancel_token]() {
-    return !queue_.empty() ||
-           done_ ||
-           (cancel_token && cancel_token->load()) ||
-           flushed_;
+    return !queue_.empty() || done_ || (cancel_token && cancel_token->load()) || flushed_;
   });
 
   // If cancelled or flushed

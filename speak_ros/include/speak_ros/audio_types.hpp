@@ -29,18 +29,15 @@ namespace speak_ros
  */
 struct AudioFormat
 {
-  uint32_t sample_rate = 24000;     // Sampling rate (Hz)
-  uint16_t channels = 1;             // Number of channels (1=mono, 2=stereo)
-  uint16_t bits_per_sample = 16;    // Bits per sample
+  uint32_t sample_rate = 24000;   // Sampling rate (Hz)
+  uint16_t channels = 1;          // Number of channels (1=mono, 2=stereo)
+  uint16_t bits_per_sample = 16;  // Bits per sample
 
   /**
    * @brief Calculate bytes per frame
    * @return Number of bytes
    */
-  uint32_t bytesPerFrame() const
-  {
-    return channels * (bits_per_sample / 8);
-  }
+  uint32_t bytesPerFrame() const { return channels * (bits_per_sample / 8); }
 };
 
 /**
@@ -49,7 +46,7 @@ struct AudioFormat
 struct AudioChunk
 {
   std::vector<uint8_t> data;  // Raw PCM data (no WAV header)
-  bool is_final = false;       // Final chunk marker
+  bool is_final = false;      // Final chunk marker
 };
 
 /**

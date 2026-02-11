@@ -15,12 +15,12 @@
 #ifndef SPEAK_ROS__AUDIO_QUEUE_HPP_
 #define SPEAK_ROS__AUDIO_QUEUE_HPP_
 
-#include "speak_ros/audio_types.hpp"
-
 #include <condition_variable>
 #include <mutex>
 #include <optional>
 #include <queue>
+
+#include "speak_ros/audio_types.hpp"
 
 namespace speak_ros
 {

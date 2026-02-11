@@ -15,13 +15,6 @@
 #ifndef SPEAK_ROS__SPEAK_ROS_HPP_
 #define SPEAK_ROS__SPEAK_ROS_HPP_
 
-#include "speak_ros/audio_player.hpp"
-#include "speak_ros/audio_queue.hpp"
-#include "speak_ros/audio_types.hpp"
-#include "speak_ros/speak_ros_plugin_base.hpp"
-#include "speak_ros_interfaces/action/speak.hpp"
-#include "speak_ros_interfaces/srv/get_parameter_schema.hpp"
-
 #include <atomic>
 #include <memory>
 #include <mutex>
@@ -31,6 +24,12 @@
 #include "pluginlib/class_loader.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
+#include "speak_ros/audio_player.hpp"
+#include "speak_ros/audio_queue.hpp"
+#include "speak_ros/audio_types.hpp"
+#include "speak_ros/speak_ros_plugin_base.hpp"
+#include "speak_ros_interfaces/action/speak.hpp"
+#include "speak_ros_interfaces/srv/get_parameter_schema.hpp"
 
 namespace speak_ros
 {
@@ -47,11 +46,9 @@ public:
 
 private:
   rclcpp_action::GoalResponse handleGoal(
-    const rclcpp_action::GoalUUID & uuid,
-    std::shared_ptr<const Speak::Goal> goal);
+    const rclcpp_action::GoalUUID & uuid, std::shared_ptr<const Speak::Goal> goal);
 
-  rclcpp_action::CancelResponse handleCancel(
-    const std::shared_ptr<GoalHandle> goal_handle);
+  rclcpp_action::CancelResponse handleCancel(const std::shared_ptr<GoalHandle> goal_handle);
 
   void handleAccepted(const std::shared_ptr<GoalHandle> goal_handle);
 
