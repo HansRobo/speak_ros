@@ -17,11 +17,14 @@
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <speak_ros_interfaces/action/speak.hpp>
 
+#include "speak_ros/parameter_validator.hpp"
+
 class TestClient : public rclcpp::Node
 {
 public:
   using Speak = speak_ros_interfaces::action::Speak;
   using GoalHandle = rclcpp_action::ClientGoalHandle<Speak>;
+  using ParameterOverride = speak_ros_interfaces::msg::ParameterOverride;
 
   explicit TestClient(const rclcpp::NodeOptions & node_options = rclcpp::NodeOptions())
   : Node("test_client", node_options)
@@ -31,7 +34,7 @@ public:
       get_node_waitables_interface(), "/speak");
   }
 
-  void sendGoal(std::string text)
+  void sendGoal(std::string text, const std::vector<ParameterOverride> & parameters = {})
   {
     using namespace std::placeholders;
 
@@ -43,9 +46,9 @@ public:
 
     auto goal_msg = Speak::Goal();
     goal_msg.text = text;
-    goal_msg.speed_rate = 1.0;
+    goal_msg.parameters = parameters;
 
-    RCLCPP_INFO(get_logger(), "Sending goal");
+    RCLCPP_INFO(get_logger(), "Sending goal with %zu parameters", parameters.size());
 
     auto send_goal_options = rclcpp_action::Client<Speak>::SendGoalOptions();
     send_goal_options.goal_response_callback =
@@ -72,11 +75,17 @@ private:
     GoalHandle::SharedPtr, const std::shared_ptr<const Speak::Feedback> feedback)
   {
     switch (feedback->state) {
-      case Speak::Feedback::GENERATING:
-        RCLCPP_INFO(get_logger(), "Generating sound file...");
+      case Speak::Feedback::SYNTHESIZING:
+        RCLCPP_INFO(
+          get_logger(), "SYNTHESIZING (progress: %.1f%%)", feedback->synthesis_progress * 100.0);
+        break;
+      case Speak::Feedback::BUFFERING:
+        RCLCPP_INFO(get_logger(), "BUFFERING (buffer: %.1f%%)", feedback->buffer_level * 100.0);
         break;
       case Speak::Feedback::PLAYING:
-        RCLCPP_INFO(get_logger(), "Playing sound file...");
+        RCLCPP_INFO(
+          get_logger(), "PLAYING (%.2fs, buffer: %.1f%%)", feedback->playback_seconds,
+          feedback->buffer_level * 100.0);
         break;
       default:
         RCLCPP_INFO(get_logger(), "Unknown state");
@@ -86,29 +95,104 @@ private:
 
   void resultCallback(const GoalHandle::WrappedResult & result)
   {
-    RCLCPP_INFO_STREAM(
-      get_logger(),
-      "elapsed time[s] : " << rclcpp::Duration(result.result->elapsed_time).seconds());
+    const char * termination_str = "UNKNOWN";
+    switch (result.result->termination_reason) {
+      case Speak::Result::COMPLETED:
+        termination_str = "COMPLETED";
+        break;
+      case Speak::Result::CANCELLED:
+        termination_str = "CANCELLED";
+        break;
+      case Speak::Result::ERROR:
+        termination_str = "ERROR";
+        break;
+    }
+
+    RCLCPP_INFO(
+      get_logger(), "Result: %s, elapsed: %.2fs, samples: %u", termination_str,
+      rclcpp::Duration(result.result->elapsed_time).seconds(), result.result->total_samples_played);
     rclcpp::shutdown();
   }
 };
 
 int main(int argc, char ** argv)
 {
-  for (int i = 0; i < argc; i++) {
-    std::cout << argv[i] << std::endl;
-  }
   rclcpp::init(argc, argv);
 
-  TestClient test_client;
+  auto node = std::make_shared<TestClient>();
 
+  // Parse command line arguments
   std::string input_text = "Hello World!";
-  if (argc > 1) {
-    input_text = argv[1];
-  }
-  test_client.sendGoal(input_text);
+  std::vector<speak_ros_interfaces::msg::ParameterOverride> parameters;
+  bool show_schema = false;
 
-  rclcpp::spin(test_client.get_node_base_interface());
+  for (int i = 1; i < argc; ++i) {
+    std::string arg = argv[i];
+    if (arg == "--param" && i + 1 < argc) {
+      // Format: --param name=value
+      std::string param = argv[++i];
+      size_t eq_pos = param.find('=');
+      if (eq_pos != std::string::npos) {
+        speak_ros_interfaces::msg::ParameterOverride override;
+        override.name = param.substr(0, eq_pos);
+        override.value = param.substr(eq_pos + 1);
+        parameters.push_back(override);
+      } else {
+        RCLCPP_ERROR(
+          node->get_logger(), "Invalid parameter format: '%s'. Use --param name=value",
+          param.c_str());
+        return 1;
+      }
+    } else if (arg == "--show-schema") {
+      show_schema = true;
+    } else if (arg == "--help" || arg == "-h") {
+      std::cout << "Usage: " << argv[0] << " [TEXT] [OPTIONS]\n"
+                << "\n"
+                << "Options:\n"
+                << "  --param name=value  Set parameter override\n"
+                << "  --show-schema       Show available parameters and exit\n"
+                << "  --help, -h          Show this help message\n"
+                << "\n"
+                << "Examples:\n"
+                << "  " << argv[0] << " \"Hello\"\n"
+                << "  " << argv[0] << " \"Hello\" --param speaker=3 --param speedScale=1.5\n"
+                << "  " << argv[0] << " --show-schema\n";
+      return 0;
+    } else {
+      input_text = arg;
+    }
+  }
+
+  // Create ParameterValidator and load schema
+  auto validator = speak_ros::ParameterValidator::create(node);
+  if (!validator->loadSchema("/get_parameter_schema", std::chrono::seconds(5))) {
+    RCLCPP_ERROR(node->get_logger(), "Failed to load parameter schema");
+    return 1;
+  }
+
+  // Schema display mode
+  if (show_schema) {
+    validator->printSchema();
+    return 0;
+  }
+
+  // Parameter validation
+  if (!parameters.empty()) {
+    auto result = validator->validate(parameters);
+    if (!result.valid) {
+      RCLCPP_ERROR(node->get_logger(), "Parameter validation failed:");
+      for (const auto & error : result.errors) {
+        RCLCPP_ERROR(node->get_logger(), "  - %s", error.c_str());
+      }
+      return 1;
+    }
+    RCLCPP_INFO(node->get_logger(), "Parameter validation succeeded");
+  }
+
+  // Send goal
+  node->sendGoal(input_text, parameters);
+
+  rclcpp::spin(node->get_node_base_interface());
 
   rclcpp::shutdown();
   return 0;

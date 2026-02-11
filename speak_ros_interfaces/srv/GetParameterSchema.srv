@@ -1,0 +1,9 @@
+# GetParameterSchema.srv
+# Service for clients to retrieve the parameter schema of the currently loaded plugin
+
+# Request (empty)
+---
+# Response
+
+# List of parameter schemas
+ParameterSchema[] parameters

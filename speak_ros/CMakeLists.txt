@@ -5,7 +5,18 @@ find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
 ament_auto_find_build_dependencies()
 
-ament_auto_add_library(${PROJECT_NAME} SHARED src/${PROJECT_NAME}.cpp)
+# PortAudio dependency
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
+
+ament_auto_add_library(${PROJECT_NAME} SHARED
+  src/audio_queue.cpp
+  src/audio_player.cpp
+  src/wav_utils.cpp
+  src/${PROJECT_NAME}.cpp
+)
+target_include_directories(${PROJECT_NAME} PRIVATE ${PORTAUDIO_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} ${PORTAUDIO_LIBRARIES})
 rclcpp_components_register_nodes(${PROJECT_NAME} "speak_ros::SpeakROS")
 
 ament_auto_add_executable(${PROJECT_NAME}_node src/${PROJECT_NAME}_node.cpp)
