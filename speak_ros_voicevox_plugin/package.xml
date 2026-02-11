@@ -9,7 +9,7 @@
 
     <license>Apache 2.0</license>
 
-    <buildtool_depend>ament_cmake_auto</buildtool_depend>s
+    <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
     <depend>speak_ros</depend>
     <depend>rclcpp</depend>
