@@ -15,113 +15,67 @@
 #ifndef SPEAK_ROS__SPEAK_ROS_HPP_
 #define SPEAK_ROS__SPEAK_ROS_HPP_
 
+#include "speak_ros/audio_player.hpp"
+#include "speak_ros/audio_queue.hpp"
+#include "speak_ros/audio_types.hpp"
+#include "speak_ros/speak_ros_plugin_base.hpp"
+#include "speak_ros_interfaces/action/speak.hpp"
+#include "speak_ros_interfaces/srv/get_parameter_schema.hpp"
+
+#include <atomic>
 #include <memory>
+#include <mutex>
 #include <string>
-#include <utility>
-#include <vector>
+#include <thread>
 
 #include "pluginlib/class_loader.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
-#include "speak_ros/speak_ros_plugin_base.hpp"
-#include "speak_ros_interfaces/action/speak.hpp"
 
 namespace speak_ros
 {
+
 class SpeakROS : public rclcpp::Node
 {
 public:
-  explicit SpeakROS(rclcpp::NodeOptions options) : rclcpp::Node("speak_ros", options)
-  {
-    pluginlib::ClassLoader<speak_ros::SpeakROSPluginBase> class_loader(
-      "speak_ros", "speak_ros::SpeakROSPluginBase");
+  using Speak = speak_ros_interfaces::action::Speak;
+  using GoalHandle = rclcpp_action::ServerGoalHandle<Speak>;
+  using GetParameterSchema = speak_ros_interfaces::srv::GetParameterSchema;
 
-    declare_parameter<std::string>("plugin_name", "open_jtalk_plugin::OpenJTalkPlugin");
-    get_parameter("plugin_name", plugin_name);
-
-    try {
-      plugin = class_loader.createSharedInstance(plugin_name);
-    } catch (pluginlib::PluginlibException & ex) {
-      RCLCPP_ERROR_STREAM(
-        get_logger(), "Can't find plugin : " << plugin_name << " : " << ex.what());
-      return;
-    }
-
-    plugin->setParameterInterface(get_node_parameters_interface());
-
-    RCLCPP_INFO_STREAM(get_logger(), "Using plugin : " << plugin_name);
-
-    plugin->updateParameters(true);
-
-    using Speak = speak_ros_interfaces::action::Speak;
-    server = rclcpp_action::create_server<Speak>(
-      get_node_base_interface(), get_node_clock_interface(), get_node_logging_interface(),
-      get_node_waitables_interface(), "speak",
-      // handle goal
-      [](const rclcpp_action::GoalUUID, std::shared_ptr<const Speak::Goal> goal)
-        -> rclcpp_action::GoalResponse { return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE; },
-      // handle cancel
-      [](const std::shared_ptr<rclcpp_action::ServerGoalHandle<Speak>> goal_handle)
-        -> rclcpp_action::CancelResponse { return rclcpp_action::CancelResponse::REJECT; },
-      // handle accepted
-      [this](const std::shared_ptr<rclcpp_action::ServerGoalHandle<Speak>> goal_handle) -> void {
-        std::thread([goal_handle, this]() {
-          const auto goal = goal_handle->get_goal();
-          auto feedback = std::make_shared<Speak::Feedback>();
-
-          feedback->state = Speak::Feedback::GENERATING;
-          goal_handle->publish_feedback(feedback);
-
-          generateSoundFile(goal->text);
-
-          std::promise<void> play_finish_notifier;
-          std::future<void> play_finish_monitor = play_finish_notifier.get_future();
-
-          auto play_start_time = now();
-          auto play_thread = std::thread([&play_finish_notifier, this]() {
-            playSoundFile();
-            play_finish_notifier.set_value();
-          });
-
-          using std::literals::chrono_literals::operator""s;
-
-          for (rclcpp::FutureReturnCode return_code;
-               return_code != rclcpp::FutureReturnCode::SUCCESS;
-               return_code = rclcpp::spin_until_future_complete(
-                 this->get_node_base_interface(), play_finish_monitor, 0.5s)) {
-            if (return_code == rclcpp::FutureReturnCode::INTERRUPTED) {
-              auto result = std::make_shared<Speak::Result>();
-              result->elapsed_time = now() - play_start_time;
-              goal_handle->abort(result);
-              play_thread.join();
-              return;
-            }
-            feedback->state = Speak::Feedback::PLAYING;
-            goal_handle->publish_feedback(feedback);
-          }
-
-          play_thread.join();
-          auto result = std::make_shared<Speak::Result>();
-          result->elapsed_time = now() - play_start_time;
-          goal_handle->succeed(result);
-        }).detach();
-      });
-  }
-
-  void generateSoundFile(std::string input_text)
-  {
-    std::filesystem::create_directory(base_directory);
-    generated_sound_path = plugin->generateSoundFile(input_text, base_directory, "generated");
-  }
-
-  void playSoundFile() { plugin->playSoundFile(generated_sound_path); }
+  explicit SpeakROS(const rclcpp::NodeOptions & options);
+  ~SpeakROS();
 
 private:
-  std::filesystem::path base_directory = "/tmp/speak_ros";
-  std::filesystem::path generated_sound_path;
-  std::shared_ptr<speak_ros::SpeakROSPluginBase> plugin = nullptr;
-  rclcpp_action::Server<speak_ros_interfaces::action::Speak>::SharedPtr server;
-  std::string plugin_name;
+  rclcpp_action::GoalResponse handleGoal(
+    const rclcpp_action::GoalUUID & uuid,
+    std::shared_ptr<const Speak::Goal> goal);
+
+  rclcpp_action::CancelResponse handleCancel(
+    const std::shared_ptr<GoalHandle> goal_handle);
+
+  void handleAccepted(const std::shared_ptr<GoalHandle> goal_handle);
+
+  void executeGoal(std::shared_ptr<GoalHandle> goal_handle);
+
+  void handleGetParameterSchema(
+    const std::shared_ptr<GetParameterSchema::Request> request,
+    std::shared_ptr<GetParameterSchema::Response> response);
+
+  pluginlib::ClassLoader<SpeakROSPluginBase> class_loader_;
+  std::shared_ptr<SpeakROSPluginBase> plugin_;
+  std::string plugin_name_;
+
+  rclcpp_action::Server<Speak>::SharedPtr action_server_;
+
+  rclcpp::Service<GetParameterSchema>::SharedPtr parameter_schema_service_;
+
+  AudioQueue audio_queue_;
+  AudioPlayer audio_player_;
+
+  CancelToken current_cancel_token_;
+  std::mutex cancel_mutex_;
+
+  std::thread execution_thread_;
 };
 
 }  // namespace speak_ros
