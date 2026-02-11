@@ -7,6 +7,9 @@ ament_auto_find_build_dependencies()
 rosidl_generate_interfaces(${PROJECT_NAME}
   action/Speak.action
   msg/AudioChunk.msg
+  msg/ParameterOverride.msg
+  msg/ParameterSchema.msg
+  srv/GetParameterSchema.srv
   DEPENDENCIES builtin_interfaces)
 
 if(BUILD_TESTING)

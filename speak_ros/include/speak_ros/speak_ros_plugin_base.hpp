@@ -67,7 +67,10 @@ public:
   {
   }
 
-  void updateParameters(bool declare_parameters = false)
+  /**
+   * @brief Declare parameters and load initial values (once at node startup)
+   */
+  void initializeParameters()
   {
     auto parameters_default = getParametersDefault();
     std::unordered_map<std::string, std::variant<int, double, std::string>> parameters;
@@ -75,27 +78,21 @@ public:
     std::string topic_prefix = getPluginName() + "/";
     for (const auto & parameter : parameters_default) {
       if (std::holds_alternative<int>(parameter.default_value)) {
-        if (declare_parameters) {
-          parameter_interface->declare_parameter(
-            topic_prefix + parameter.name,
-            rclcpp::ParameterValue(std::get<int>(parameter.default_value)));
-        }
+        parameter_interface->declare_parameter(
+          topic_prefix + parameter.name,
+          rclcpp::ParameterValue(std::get<int>(parameter.default_value)));
         parameters[parameter.name] =
           (int)parameter_interface->get_parameter(topic_prefix + parameter.name).as_int();
       } else if (std::holds_alternative<double>(parameter.default_value)) {
-        if (declare_parameters) {
-          parameter_interface->declare_parameter(
-            topic_prefix + parameter.name,
-            rclcpp::ParameterValue(std::get<double>(parameter.default_value)));
-        }
+        parameter_interface->declare_parameter(
+          topic_prefix + parameter.name,
+          rclcpp::ParameterValue(std::get<double>(parameter.default_value)));
         parameters[parameter.name] =
           parameter_interface->get_parameter(topic_prefix + parameter.name).as_double();
       } else if (std::holds_alternative<std::string>(parameter.default_value)) {
-        if (declare_parameters) {
-          parameter_interface->declare_parameter(
-            topic_prefix + parameter.name,
-            rclcpp::ParameterValue(std::get<std::string>(parameter.default_value)));
-        }
+        parameter_interface->declare_parameter(
+          topic_prefix + parameter.name,
+          rclcpp::ParameterValue(std::get<std::string>(parameter.default_value)));
         parameters[parameter.name] =
           parameter_interface->get_parameter(topic_prefix + parameter.name).as_string();
       }
@@ -103,6 +100,68 @@ public:
     importParameters(parameters);
   }
 
+  /**
+   * @brief Load ROS parameters and merge Goal overrides (per request)
+   * @param overrides List of parameters to override (name-value pairs)
+   */
+  void loadParametersWithOverrides(
+    const std::vector<std::pair<std::string, std::string>> & overrides = {})
+  {
+    auto parameters_default = getParametersDefault();
+    std::unordered_map<std::string, std::variant<int, double, std::string>> parameters;
+
+    std::string topic_prefix = getPluginName() + "/";
+
+    // Step 1: Load from ROS parameters
+    for (const auto & parameter : parameters_default) {
+      if (std::holds_alternative<int>(parameter.default_value)) {
+        parameters[parameter.name] =
+          (int)parameter_interface->get_parameter(topic_prefix + parameter.name).as_int();
+      } else if (std::holds_alternative<double>(parameter.default_value)) {
+        parameters[parameter.name] =
+          parameter_interface->get_parameter(topic_prefix + parameter.name).as_double();
+      } else if (std::holds_alternative<std::string>(parameter.default_value)) {
+        parameters[parameter.name] =
+          parameter_interface->get_parameter(topic_prefix + parameter.name).as_string();
+      }
+    }
+
+    // Step 2: Merge Goal overrides
+    for (const auto & [name, value_str] : overrides) {
+      // Search parameter definition
+      auto it = std::find_if(
+        parameters_default.begin(), parameters_default.end(),
+        [&name](const Parameter & p) { return p.name == name; });
+
+      if (it == parameters_default.end()) {
+        RCLCPP_WARN(
+          rclcpp::get_logger("speak_ros_plugin"),
+          "Unknown parameter override: '%s', ignoring", name.c_str());
+        continue;
+      }
+
+      // Convert according to default_value type
+      try {
+        if (std::holds_alternative<int>(it->default_value)) {
+          parameters[name] = std::stoi(value_str);
+        } else if (std::holds_alternative<double>(it->default_value)) {
+          parameters[name] = std::stod(value_str);
+        } else if (std::holds_alternative<std::string>(it->default_value)) {
+          parameters[name] = value_str;
+        }
+      } catch (const std::exception & e) {
+        RCLCPP_WARN(
+          rclcpp::get_logger("speak_ros_plugin"),
+          "Failed to convert parameter '%s' value '%s': %s, ignoring",
+          name.c_str(), value_str.c_str(), e.what());
+      }
+    }
+
+    // Step 3: importParameters(params)
+    importParameters(parameters);
+  }
+
+protected:
   rclcpp::node_interfaces::NodeParametersInterface::SharedPtr parameter_interface;
 };
 }  // namespace speak_ros
