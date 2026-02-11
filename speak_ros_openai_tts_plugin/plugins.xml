@@ -1,0 +1,5 @@
+<library path="speak_ros_openai_tts_plugin">
+	<class type="openai_tts_plugin::OpenAITTSPlugin" base_class_type="speak_ros::SpeakROSPluginBase">
+		<description>OpenAI TTS plugin for speak_ros (streaming PCM)</description>
+	</class>
+</library>
