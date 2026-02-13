@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ROS_DISTRO: [humble, jazzy]
+        ROS_DISTRO: [humble, jazzy, rolling]
     env:
       CCACHE_DIR: "${{ github.workspace }}/.ccache"
     steps:
