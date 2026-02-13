@@ -7,12 +7,11 @@ on:
 
 jobs:
   industrial_ci:
-    name: ROS ${{ matrix.ROS_DISTRO }} (${{ matrix.ROS_REPO }})
+    name: ROS ${{ matrix.ROS_DISTRO }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
         ROS_DISTRO: [humble, jazzy]
-        ROS_REPO: [testing, main]
     env:
       CCACHE_DIR: "${{ github.workspace }}/.ccache"
     steps:
@@ -20,10 +19,9 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ccache-${{ matrix.ROS_DISTRO }}-${{ matrix.ROS_REPO }}-${{github.run_id}}
+          key: ccache-${{ matrix.ROS_DISTRO }}-${{github.run_id}}
           restore-keys: |
-            ccache-${{ matrix.ROS_DISTRO }}-${{ matrix.ROS_REPO }}-
+            ccache-${{ matrix.ROS_DISTRO }}-
       - uses: 'ros-industrial/industrial_ci@master'
         env: # either pass all entries explicitly
           ROS_DISTRO: ${{ matrix.ROS_DISTRO }}
-          ROS_REPO: ${{ matrix.ROS_REPO }}
