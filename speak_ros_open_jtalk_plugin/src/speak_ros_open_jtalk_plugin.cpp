@@ -12,10 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <unistd.h>
+
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+#include <vector>
 
 #include "speak_ros/wav_utils.hpp"
 #include "speak_ros_open_jtalk_plugin/open_jtalk_plugin.hpp"
@@ -34,9 +37,18 @@ void open_jtalk_plugin::OpenJTalkPlugin::synthesize(
   const std::string & text, speak_ros::AudioChunkCallback callback,
   speak_ros::CancelToken cancel_token)
 {
-  // Generate temporary file path
-  std::string temp_file_path = std::tmpnam(nullptr);
-  temp_file_path += ".wav";
+  // Generate a secure temporary file path.
+  std::string temp_file_path_template =
+    (std::filesystem::temp_directory_path() / "speak_ros_open_jtalk_XXXXXX").string();
+  std::vector<char> temp_file_path_buffer(
+    temp_file_path_template.begin(), temp_file_path_template.end());
+  temp_file_path_buffer.push_back('\0');
+  const int temp_fd = mkstemp(temp_file_path_buffer.data());
+  if (temp_fd == -1) {
+    throw std::runtime_error("Failed to create temporary file path");
+  }
+  close(temp_fd);
+  const std::string temp_file_path = temp_file_path_buffer.data();
 
   // Build OpenJTalk command
   std::stringstream command_ss;
@@ -57,6 +69,7 @@ void open_jtalk_plugin::OpenJTalkPlugin::synthesize(
   // Execute OpenJTalk to generate WAV file
   int result = system(command_ss.str().c_str());
   if (result != 0) {
+    std::filesystem::remove(temp_file_path);
     throw std::runtime_error("OpenJTalk execution failed");
   }
 
@@ -69,6 +82,7 @@ void open_jtalk_plugin::OpenJTalkPlugin::synthesize(
   // Load generated WAV file
   std::ifstream file(temp_file_path, std::ios::binary);
   if (!file) {
+    std::filesystem::remove(temp_file_path);
     throw std::runtime_error("Failed to open generated WAV file");
   }
 

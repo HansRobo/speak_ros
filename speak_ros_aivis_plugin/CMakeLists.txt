@@ -1,5 +1,10 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.14)
 project(speak_ros_aivis_plugin)
+
+# cpprestsdk still resolves Boost via find_package(Boost) on some systems.
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 OLD)
+endif()
 
 find_package(ament_cmake_auto REQUIRED)
 find_package(cpprestsdk REQUIRED)
