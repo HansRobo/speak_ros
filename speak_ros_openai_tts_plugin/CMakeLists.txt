@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 project(speak_ros_openai_tts_plugin)
 
 find_package(ament_cmake_auto REQUIRED)
+find_package(ament_cmake REQUIRED)
 find_package(cpprestsdk REQUIRED)
 ament_auto_find_build_dependencies()
 

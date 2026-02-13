@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 project(speak_ros_open_jtalk_plugin)
 
 find_package(ament_cmake_auto REQUIRED)
+find_package(ament_cmake REQUIRED)
 ament_auto_find_build_dependencies()
 
 add_library(${PROJECT_NAME} SHARED src/${PROJECT_NAME}.cpp)
