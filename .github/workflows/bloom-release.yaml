@@ -1,0 +1,75 @@
+name: Bloom Release
+
+# セマンティックバージョンタグのpushでトリガー（v0.0.1, v1.2.3など）
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+      - '[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:  # 手動実行も可能
+    inputs:
+      tag:
+        description: 'Tag to release (e.g., 0.0.2)'
+        required: true
+        type: string
+
+jobs:
+  bloom-release:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false  # 1つのディストリビューションが失敗しても他は続行
+      matrix:
+        ros_distro: [humble, jazzy, rolling]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+
+          # "v" prefixを削除
+          VERSION="${TAG#v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Releasing version: $VERSION"
+
+      - name: Bloom Release to ${{ matrix.ros_distro }}
+        uses: at-wat/bloom-release-action@v0
+        with:
+          ros_distro: ${{ matrix.ros_distro }}
+          github_token_bloom: ${{ secrets.GITHUB_TOKEN_BLOOM }}
+          # 初回手動bloom完了後、以下のコメントアウトを解除
+          # open_pr: true
+
+      - name: Summary
+        if: success()
+        run: |
+          echo "✅ Bloom release for ${{ matrix.ros_distro }} completed!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **ROS Distro**: ${{ matrix.ros_distro }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check the rosdistro PR for merge status." >> $GITHUB_STEP_SUMMARY
+
+      - name: Failure Summary
+        if: failure()
+        run: |
+          echo "❌ Bloom release for ${{ matrix.ros_distro }} failed!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **ROS Distro**: ${{ matrix.ros_distro }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Common issues:**" >> $GITHUB_STEP_SUMMARY
+          echo "1. Release repository (speak_ros-release) doesn't exist" >> $GITHUB_STEP_SUMMARY
+          echo "2. First release needs manual bloom with --new-track" >> $GITHUB_STEP_SUMMARY
+          echo "3. GITHUB_TOKEN_BLOOM secret not configured" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "See job logs for details." >> $GITHUB_STEP_SUMMARY

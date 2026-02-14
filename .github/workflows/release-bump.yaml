@@ -1,0 +1,110 @@
+name: Release Bump
+
+# PRがmainにマージされた時にトリガー
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  release-bump:
+    # マージされたPRのみ実行、かつrelease:skipラベルがない場合のみ
+    if: >
+      github.event.pull_request.merged == true &&
+      !contains(github.event.pull_request.labels.*.name, 'release:skip')
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # 全履歴を取得（CHANGELOG生成に必要）
+          token: ${{ secrets.RELEASE_TOKEN }}  # タグpushでワークフローをトリガーするためのPAT
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install catkin_pkg
+        run: |
+          pip install catkin_pkg
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Determine bump type from PR labels
+        id: bump-type
+        run: |
+          LABELS='${{ toJson(github.event.pull_request.labels.*.name) }}'
+
+          if echo "$LABELS" | jq -e 'contains(["release:major"])' > /dev/null; then
+            echo "type=major" >> $GITHUB_OUTPUT
+          elif echo "$LABELS" | jq -e 'contains(["release:minor"])' > /dev/null; then
+            echo "type=minor" >> $GITHUB_OUTPUT
+          else
+            echo "type=patch" >> $GITHUB_OUTPUT
+          fi
+
+          echo "Bump type: $(cat $GITHUB_OUTPUT)"
+
+      - name: Check if CHANGELOG.rst exists
+        id: check-changelog
+        run: |
+          # 少なくとも1つのパッケージにCHANGELOG.rstが存在するかチェック
+          if find . -name "CHANGELOG.rst" -type f | grep -q .; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate CHANGELOG (first time only)
+        if: steps.check-changelog.outputs.exists == 'false'
+        run: |
+          catkin_generate_changelog --all
+
+      - name: Generate CHANGELOG (subsequent releases)
+        if: steps.check-changelog.outputs.exists == 'true'
+        run: |
+          catkin_generate_changelog
+
+      - name: Prepare release (bump version, update CHANGELOG, create commit and tag)
+        id: prepare-release
+        run: |
+          catkin_prepare_release --bump ${{ steps.bump-type.outputs.type }} -y --no-push
+
+          # 作成されたタグ名を取得
+          TAG_NAME=$(git describe --tags --abbrev=0)
+          echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "Created tag: $TAG_NAME"
+
+      - name: Push changes and tag
+        run: |
+          git push origin main
+          git push origin ${{ steps.prepare-release.outputs.tag }}
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          TAG_NAME="${{ steps.prepare-release.outputs.tag }}"
+
+          # CHANGELOGから当該バージョンのエントリを抽出（簡易版）
+          CHANGELOG_CONTENT="See CHANGELOG.rst files in each package for details."
+
+          gh release create "$TAG_NAME" \
+            --title "Release $TAG_NAME" \
+            --notes "$CHANGELOG_CONTENT" \
+            --generate-notes
+
+      - name: Summary
+        run: |
+          echo "✅ Release bump completed successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.prepare-release.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Bump type**: ${{ steps.bump-type.outputs.type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Next step**: bloom-release workflow will be triggered automatically" >> $GITHUB_STEP_SUMMARY
