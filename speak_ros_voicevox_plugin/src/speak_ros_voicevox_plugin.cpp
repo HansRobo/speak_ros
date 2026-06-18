@@ -153,8 +153,7 @@ std::vector<speak_ros::Parameter> voicevox_plugin::VoiceVoxPlugin::getParameters
       {"prePhonemeLength", "[number] pre phoneme length [sec]", 0.1},
       {"postPhonemeLength", "[number] post phoneme length [sec]", 0.1},
       {"outputSamplingRate", "[number] output sampling rate [Hz]", 24000},
-      {"outputStereo", "[bool] output stereo", "true"}
-    // clang-format on
+      {"outputStereo", "[bool] output stereo", "true"}  // clang-format on
   };
 }
 
