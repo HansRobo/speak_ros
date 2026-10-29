@@ -12,6 +12,7 @@ pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
 ament_auto_add_library(${PROJECT_NAME} SHARED
   src/audio_queue.cpp
   src/audio_player.cpp
+  src/topic_audio_sink.cpp
   src/wav_utils.cpp
   src/${PROJECT_NAME}.cpp
 )

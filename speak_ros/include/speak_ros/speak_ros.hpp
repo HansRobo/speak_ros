@@ -24,8 +24,8 @@
 #include "pluginlib/class_loader.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
-#include "speak_ros/audio_player.hpp"
 #include "speak_ros/audio_queue.hpp"
+#include "speak_ros/audio_sink.hpp"
 #include "speak_ros/audio_types.hpp"
 #include "speak_ros/speak_ros_plugin_base.hpp"
 #include "speak_ros_interfaces/action/speak.hpp"
@@ -67,7 +67,7 @@ private:
   rclcpp::Service<GetParameterSchema>::SharedPtr parameter_schema_service_;
 
   AudioQueue audio_queue_;
-  AudioPlayer audio_player_;
+  std::unique_ptr<AudioSink> audio_sink_;
 
   CancelToken current_cancel_token_;
   std::mutex cancel_mutex_;
