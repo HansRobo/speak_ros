@@ -16,6 +16,10 @@
 
 #include <chrono>
 #include <functional>
+#include <stdexcept>
+
+#include "speak_ros/audio_player.hpp"
+#include "speak_ros/topic_audio_sink.hpp"
 
 namespace speak_ros
 {
@@ -23,11 +27,21 @@ namespace speak_ros
 SpeakROS::SpeakROS(const rclcpp::NodeOptions & options)
 : Node("speak_ros", options),
   class_loader_("speak_ros", "speak_ros::SpeakROSPluginBase"),
-  audio_queue_(64),
-  audio_player_()
+  audio_queue_(64)
 {
   declare_parameter<std::string>("plugin_name", "open_jtalk_plugin::OpenJTalkPlugin");
   get_parameter("plugin_name", plugin_name_);
+
+  // "portaudio": play on the local default output device, "topic": publish AudioChunk on "audio_out"
+  declare_parameter<std::string>("audio_sink", "portaudio");
+  const std::string sink_name = get_parameter("audio_sink").as_string();
+  if (sink_name == "portaudio") {
+    audio_sink_ = std::make_unique<AudioPlayer>();
+  } else if (sink_name == "topic") {
+    audio_sink_ = std::make_unique<TopicAudioSink>(*this);
+  } else {
+    throw std::invalid_argument("Unknown audio_sink: " + sink_name + " (portaudio|topic)");
+  }
 
   // load plugin
   try {
@@ -125,7 +139,7 @@ void SpeakROS::executeGoal(std::shared_ptr<GoalHandle> goal_handle)
     AudioFormat format = plugin_->getAudioFormat();
 
     audio_queue_.flush();
-    audio_player_.open(format);
+    audio_sink_->open(format);
 
     // Feedback: SYNTHESIZING
     feedback->state = Speak::Feedback::SYNTHESIZING;
@@ -138,7 +152,7 @@ void SpeakROS::executeGoal(std::shared_ptr<GoalHandle> goal_handle)
 
     std::thread playback_thread([this, &cancel_token, &played_samples]() {
       try {
-        audio_player_.play(audio_queue_, cancel_token, played_samples);
+        audio_sink_->play(audio_queue_, cancel_token, played_samples);
       } catch (const std::exception & e) {
         RCLCPP_ERROR(get_logger(), "Playback error: %s", e.what());
       }
@@ -159,12 +173,12 @@ void SpeakROS::executeGoal(std::shared_ptr<GoalHandle> goal_handle)
 
     audio_queue_.markDone();
 
-    while (!audio_player_.isDone() && !cancel_token->load()) {
+    while (!audio_sink_->isDone() && !cancel_token->load()) {
       if (goal_handle->is_canceling()) {
         RCLCPP_INFO(get_logger(), "Goal canceled by client");
         cancel_token->store(true);
         audio_queue_.flush();
-        audio_player_.stop();
+        audio_sink_->stop();
         break;
       }
 
@@ -202,7 +216,7 @@ void SpeakROS::executeGoal(std::shared_ptr<GoalHandle> goal_handle)
     goal_handle->abort(result);
   }
 
-  audio_player_.close();
+  audio_sink_->close();
 
   {
     std::lock_guard<std::mutex> lock(cancel_mutex_);

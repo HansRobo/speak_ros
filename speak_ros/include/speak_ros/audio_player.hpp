@@ -20,6 +20,7 @@
 #include <memory>
 
 #include "speak_ros/audio_queue.hpp"
+#include "speak_ros/audio_sink.hpp"
 #include "speak_ros/audio_types.hpp"
 
 // PortAudio forward declaration
@@ -34,7 +35,7 @@ namespace speak_ros
  * Uses blocking I/O mode (Pa_WriteStream) to immediately play
  * chunks obtained from AudioQueue.
  */
-class AudioPlayer
+class AudioPlayer : public AudioSink
 {
 public:
   /**
@@ -49,7 +50,7 @@ public:
    *
    * Calls Pa_Terminate().
    */
-  ~AudioPlayer();
+  ~AudioPlayer() override;
 
   // Disable copy/move
   AudioPlayer(const AudioPlayer &) = delete;
@@ -63,7 +64,7 @@ public:
    * @param format Audio format
    * @throw std::runtime_error On stream open failure
    */
-  void open(const AudioFormat & format);
+  void open(const AudioFormat & format) override;
 
   /**
    * @brief Blocking playback loop
@@ -76,21 +77,21 @@ public:
    * @param cancel_token Cancel token
    * @param played_samples Number of played samples (for feedback)
    */
-  void play(AudioQueue & queue, CancelToken cancel_token, std::atomic<uint64_t> & played_samples);
+  void play(AudioQueue & queue, CancelToken cancel_token, std::atomic<uint64_t> & played_samples) override;
 
   /**
    * @brief Stop playback immediately
    *
    * Calls Pa_AbortStream() (discards buffer).
    */
-  void stop();
+  void stop() override;
 
   /**
    * @brief Close stream
    *
    * Calls Pa_CloseStream().
    */
-  void close();
+  void close() override;
 
   /**
    * @brief Wait for playback completion
@@ -105,7 +106,7 @@ public:
    *
    * @return True if completed
    */
-  bool isDone() const;
+  bool isDone() const override;
 
 private:
   PaStream * stream_ = nullptr;
