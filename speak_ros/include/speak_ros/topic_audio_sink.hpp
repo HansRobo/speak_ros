@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #ifndef SPEAK_ROS__TOPIC_AUDIO_SINK_HPP_
 #define SPEAK_ROS__TOPIC_AUDIO_SINK_HPP_
 

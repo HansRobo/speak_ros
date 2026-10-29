@@ -77,7 +77,8 @@ public:
    * @param cancel_token Cancel token
    * @param played_samples Number of played samples (for feedback)
    */
-  void play(AudioQueue & queue, CancelToken cancel_token, std::atomic<uint64_t> & played_samples) override;
+  void play(
+    AudioQueue & queue, CancelToken cancel_token, std::atomic<uint64_t> & played_samples) override;
 
   /**
    * @brief Stop playback immediately

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "speak_ros/topic_audio_sink.hpp"
 
 #include <optional>
