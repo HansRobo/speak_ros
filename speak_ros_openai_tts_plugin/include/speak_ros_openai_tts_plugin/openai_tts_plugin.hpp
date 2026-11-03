@@ -38,6 +38,7 @@ public:
     const std::unordered_map<std::string, std::variant<int, double, std::string>> & parameters)
     override;
 
+  std::string base_url = "https://api.openai.com";
   std::string model;
   std::string voice;
   double speed;

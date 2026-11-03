@@ -14,7 +14,9 @@
 
 #include <cpprest/http_client.h>
 
+#include <chrono>
 #include <cstdlib>
+#include <thread>
 
 #include "speak_ros_openai_tts_plugin/openai_tts_plugin.hpp"
 
@@ -51,11 +53,11 @@ void openai_tts_plugin::OpenAITTSPlugin::synthesize(
   }
 
   // Prepare HTTP POST request
-  std::string base_url = "https://api.openai.com";
-
   web::http::client::http_client_config config;
   // Enable HTTPS certificate validation (required for production)
   config.set_validate_certificates(true);
+  config.set_chunksize(4096);
+  config.set_max_redirects(0);
 
   web::http::client::http_client client(base_url, config);
 
@@ -79,11 +81,32 @@ void openai_tts_plugin::OpenAITTSPlugin::synthesize(
   request.headers().set_content_type(U("application/json"));
   request.set_body(body);
 
-  // Execute async request synchronously
-  auto response_task = client.request(request);
+  pplx::cancellation_token_source cancellation;
+  std::atomic<bool> finished{false};
+  std::thread watcher([&] {
+    while (!finished.load()) {
+      if (cancel_token && cancel_token->load()) {
+        cancellation.cancel();
+        return;
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+  });
+  struct Join
+  {
+    std::atomic<bool> & finished;
+    std::thread & thread;
+    ~Join()
+    {
+      finished.store(true);
+      thread.join();
+    }
+  } join{finished, watcher};
+  auto response_task = client.request(request, cancellation.get_token());
 
   // Check for cancellation
   if (cancel_token && cancel_token->load()) {
+    cancellation.cancel();
     return;
   }
 
@@ -99,62 +122,47 @@ void openai_tts_plugin::OpenAITTSPlugin::synthesize(
     std::string error_msg =
       "OpenAI TTS API returned status code: " + std::to_string(response.status_code());
 
-    // Include error response body if available
-    try {
-      auto error_body = response.extract_string().get();
-      if (!error_body.empty()) {
-        error_msg += ", body: " + error_body;
-      }
-    } catch (...) {
-      // Ignore if error body extraction fails
-    }
-
     throw std::runtime_error(error_msg);
   }
 
-  // Extract entire response body (due to cpprestsdk limitations, must retrieve all at once)
-  std::vector<uint8_t> pcm_data;
-  try {
-    pcm_data = response.extract_vector().get();
-  } catch (const std::exception & e) {
-    throw std::runtime_error(std::string("Failed to extract audio data: ") + e.what());
-  }
-
-  if (cancel_token && cancel_token->load()) {
-    return;
-  }
-
-  // Split PCM data into 4096-byte chunks and send
-  constexpr size_t CHUNK_SIZE = 4096;
-  size_t offset = 0;
-
-  while (offset < pcm_data.size()) {
+  auto input = response.body();
+  std::vector<uint8_t> pending;
+  uint8_t bytes[4096];
+  while (!(cancel_token && cancel_token->load())) {
+    const auto count = input.streambuf().getn(bytes, sizeof(bytes)).get();
     if (cancel_token && cancel_token->load()) {
+      cancellation.cancel();
       return;
     }
-
-    size_t remaining = pcm_data.size() - offset;
-    size_t chunk_size = std::min(CHUNK_SIZE, remaining);
-
-    speak_ros::AudioChunk chunk;
-    chunk.data.assign(pcm_data.begin() + offset, pcm_data.begin() + offset + chunk_size);
-    chunk.is_final = (offset + chunk_size >= pcm_data.size());
-
-    // Send chunk via callback
-    bool should_continue = callback(std::move(chunk));
-
-    if (!should_continue) {
+    if (count == 0) {
+      if (!pending.empty()) {
+        throw std::runtime_error("Incomplete PCM frame at end of OpenAI TTS response");
+      }
+      speak_ros::AudioChunk end;
+      end.is_final = true;
+      callback(std::move(end));
       return;
     }
-
-    offset += chunk_size;
+    pending.insert(pending.end(), bytes, bytes + count);
+    const size_t aligned = pending.size() - pending.size() % getAudioFormat().bytesPerFrame();
+    if (aligned) {
+      speak_ros::AudioChunk chunk;
+      chunk.data.assign(pending.begin(), pending.begin() + aligned);
+      pending.erase(pending.begin(), pending.begin() + aligned);
+      if (!callback(std::move(chunk))) {
+        cancellation.cancel();
+        return;
+      }
+    }
   }
+  cancellation.cancel();
 }
 
 std::vector<speak_ros::Parameter> openai_tts_plugin::OpenAITTSPlugin::getParametersDefault() const
 {
   return {
     // clang-format off
+      {"base_url", "[string] trusted API endpoint (receives the API key)", "https://api.openai.com"},
       {"model", "[string] TTS model (tts-1, tts-1-hd, gpt-4o-mini-tts)", "tts-1"},
       {"voice", "[string] Voice name (alloy, echo, fable, onyx, nova, shimmer)", "nova"},
       {"speed", "[number] Playback speed (0.25 - 4.0)", 1.0},
@@ -167,6 +175,15 @@ std::vector<speak_ros::Parameter> openai_tts_plugin::OpenAITTSPlugin::getParamet
 void openai_tts_plugin::OpenAITTSPlugin::importParameters(
   const std::unordered_map<std::string, std::variant<int, double, std::string>> & parameters)
 {
+  base_url = std::get<std::string>(parameters.at("base_url"));
+  const web::uri endpoint(base_url);
+  if (
+    (endpoint.scheme() != U("http") && endpoint.scheme() != U("https")) ||
+    endpoint.host().empty() || !endpoint.user_info().empty() ||
+    (!endpoint.path().empty() && endpoint.path() != U("/")) || !endpoint.query().empty() ||
+    !endpoint.fragment().empty()) {
+    throw std::invalid_argument("base_url must be an HTTP(S) origin without credentials or path");
+  }
   model = std::get<std::string>(parameters.at("model"));
   voice = std::get<std::string>(parameters.at("voice"));
   speed = std::get<double>(parameters.at("speed"));
