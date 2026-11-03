@@ -16,8 +16,8 @@
 
 #include <cstdlib>
 
-#include "speak_ros_http/http_stream.hpp"
-#include "speak_ros_http/pcm_stream.hpp"
+#include "speak_ros/http_stream.hpp"
+#include "speak_ros/pcm_stream.hpp"
 #include "speak_ros_openai_tts_plugin/openai_tts_plugin.hpp"
 
 speak_ros::AudioFormat openai_tts_plugin::OpenAITTSPlugin::getAudioFormat() const
@@ -53,12 +53,12 @@ void openai_tts_plugin::OpenAITTSPlugin::synthesize(
   }
 
   // Prepare HTTP POST request
-  auto config = speak_ros_http::streamingConfig();
+  auto config = speak_ros::streamingConfig();
   // Enable HTTPS certificate validation (required for production)
   config.set_validate_certificates(true);
   config.set_max_redirects(0);
 
-  speak_ros_http::HttpStream http(base_url, cancel_token, config);
+  speak_ros::HttpStream http(base_url, cancel_token, config);
 
   // Build request body
   web::json::value body;
@@ -95,7 +95,7 @@ void openai_tts_plugin::OpenAITTSPlugin::synthesize(
     throw std::runtime_error(error_msg);
   }
 
-  speak_ros_http::PcmStream pcm(getAudioFormat(), std::move(callback));
+  speak_ros::PcmStream pcm(getAudioFormat(), std::move(callback));
   if (http.consume(
         response, [&](const uint8_t * bytes, size_t size) { return pcm.feed(bytes, size); })) {
     pcm.finish();
