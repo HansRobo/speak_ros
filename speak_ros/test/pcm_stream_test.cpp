@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "speak_ros_http/pcm_stream.hpp"
+#include "speak_ros/pcm_stream.hpp"
 
 #include <iostream>
 
@@ -29,7 +29,7 @@ int main()
     for (const size_t split : {1, 3, 4095, 4096, 20000}) {
       std::vector<uint8_t> actual;
       int finals = 0;
-      speak_ros_http::PcmStream pcm(format, [&](speak_ros::AudioChunk chunk) {
+      speak_ros::PcmStream pcm(format, [&](speak_ros::AudioChunk chunk) {
         ok = ok && chunk.data.size() <= 4096 && chunk.data.size() % format.bytesPerFrame() == 0 &&
              finals == 0;
         finals += chunk.is_final;
@@ -45,7 +45,7 @@ int main()
   }
   speak_ros::AudioFormat format;
   int calls = 0;
-  speak_ros_http::PcmStream empty(format, [&](speak_ros::AudioChunk chunk) {
+  speak_ros::PcmStream empty(format, [&](speak_ros::AudioChunk chunk) {
     ok = ok && chunk.is_final && chunk.data.empty();
     ++calls;
     return true;
@@ -53,21 +53,21 @@ int main()
   empty.finish();
   ok = ok && calls == 1;
   const uint8_t bytes[] = {1, 2, 3};
-  speak_ros_http::PcmStream odd(format, [&](speak_ros::AudioChunk) { return false; });
+  speak_ros::PcmStream odd(format, [&](speak_ros::AudioChunk) { return false; });
   ok = odd.feed(bytes, 1) && ok;
   try {
     odd.finish();
     ok = false;
   } catch (const std::runtime_error &) {
   }
-  speak_ros_http::PcmStream rejected(format, [&](speak_ros::AudioChunk chunk) {
+  speak_ros::PcmStream rejected(format, [&](speak_ros::AudioChunk chunk) {
     ok = ok && !chunk.is_final;
     return false;
   });
   ok = !rejected.feed(bytes, 2) && ok;
   format.channels = 0;
   try {
-    speak_ros_http::PcmStream invalid(format, [](speak_ros::AudioChunk) { return true; });
+    speak_ros::PcmStream invalid(format, [](speak_ros::AudioChunk) { return true; });
     ok = false;
   } catch (const std::invalid_argument &) {
   }

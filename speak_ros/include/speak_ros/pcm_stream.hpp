@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SPEAK_ROS_HTTP__PCM_STREAM_HPP_
-#define SPEAK_ROS_HTTP__PCM_STREAM_HPP_
+#ifndef SPEAK_ROS__PCM_STREAM_HPP_
+#define SPEAK_ROS__PCM_STREAM_HPP_
 
 #include <algorithm>
 #include <speak_ros/audio_types.hpp>
 #include <stdexcept>
 
-namespace speak_ros_http
+namespace speak_ros
 {
 // Aligns arbitrary transport fragments without accumulating an utterance.
 class PcmStream
@@ -68,5 +68,5 @@ private:
   speak_ros::AudioChunkCallback callback_;
   std::vector<uint8_t> pending_;
 };
-}  // namespace speak_ros_http
+}  // namespace speak_ros
 #endif

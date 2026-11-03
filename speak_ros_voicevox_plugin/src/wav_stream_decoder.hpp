@@ -17,7 +17,7 @@
 
 #include <algorithm>
 #include <cstring>
-#include <speak_ros_http/pcm_stream.hpp>
+#include <speak_ros/pcm_stream.hpp>
 #include <stdexcept>
 
 namespace voicevox_plugin
@@ -115,7 +115,7 @@ private:
   uint32_t u32(size_t offset) const { return u16(offset) | (uint32_t(u16(offset + 2)) << 16); }
   void discard(size_t size) { buffer_.erase(buffer_.begin(), buffer_.begin() + size); }
   speak_ros::AudioFormat format_;
-  speak_ros_http::PcmStream pcm_;
+  speak_ros::PcmStream pcm_;
   std::vector<uint8_t> buffer_;
   uint64_t received_ = 0;
   uint64_t expected_ = 0;

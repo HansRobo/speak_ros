@@ -18,7 +18,7 @@
 #include <cpprest/json.h>
 
 #include <cctype>
-#include <speak_ros_http/pcm_stream.hpp>
+#include <speak_ros/pcm_stream.hpp>
 #include <sstream>
 
 namespace gemini_tts_plugin
@@ -26,7 +26,7 @@ namespace gemini_tts_plugin
 class AudioEvents
 {
 public:
-  explicit AudioEvents(speak_ros_http::PcmStream & pcm) : pcm_(pcm) {}
+  explicit AudioEvents(speak_ros::PcmStream & pcm) : pcm_(pcm) {}
 
   bool feed(const uint8_t * bytes, size_t size)
   {
@@ -233,7 +233,7 @@ private:
   }
 
   static constexpr size_t MAX_EVENT_BYTES = 4 * 1024 * 1024;
-  speak_ros_http::PcmStream & pcm_;
+  speak_ros::PcmStream & pcm_;
   std::string line_;
   std::string data_;
   std::string event_name_;

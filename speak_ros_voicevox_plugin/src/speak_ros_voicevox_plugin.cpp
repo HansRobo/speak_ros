@@ -16,7 +16,7 @@
 
 #include <cmath>
 
-#include "speak_ros_http/http_stream.hpp"
+#include "speak_ros/http_stream.hpp"
 #include "speak_ros_voicevox_plugin/voicevox_plugin.hpp"
 #include "wav_stream_decoder.hpp"
 
@@ -34,7 +34,7 @@ void voicevox_plugin::VoiceVoxPlugin::synthesize(
   speak_ros::CancelToken cancel_token)
 {
   const std::string base_url = "http://" + host_name + ":" + std::to_string(port);
-  speak_ros_http::HttpStream http(base_url, cancel_token);
+  speak_ros::HttpStream http(base_url, cancel_token);
   auto request = [&](
                    const web::http::method & method, const utility::string_t & uri,
                    const utility::string_t & body = utility::string_t()) {

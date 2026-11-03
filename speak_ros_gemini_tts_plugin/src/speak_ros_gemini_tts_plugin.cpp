@@ -16,8 +16,8 @@
 
 #include <cctype>
 #include <cstdlib>
-#include <speak_ros_http/http_stream.hpp>
-#include <speak_ros_http/pcm_stream.hpp>
+#include <speak_ros/http_stream.hpp>
+#include <speak_ros/pcm_stream.hpp>
 
 #include "audio_events.hpp"
 #include "speak_ros_gemini_tts_plugin/gemini_tts_plugin.hpp"
@@ -50,10 +50,10 @@ void GeminiTTSPlugin::synthesize(
   if (key.empty()) {
     throw std::runtime_error("Set GEMINI_API_KEY or the api_key parameter for Gemini TTS");
   }
-  auto config = speak_ros_http::streamingConfig();
+  auto config = speak_ros::streamingConfig();
   config.set_validate_certificates(true);
   config.set_max_redirects(0);
-  speak_ros_http::HttpStream http(base_url_, cancel_token, config);
+  speak_ros::HttpStream http(base_url_, cancel_token, config);
 
   using web::json::value;
   value content;
@@ -99,7 +99,7 @@ void GeminiTTSPlugin::synthesize(
   if (content_type != U("text/event-stream")) {
     throw std::runtime_error("Gemini TTS response is not an event stream");
   }
-  speak_ros_http::PcmStream pcm(getAudioFormat(), std::move(callback));
+  speak_ros::PcmStream pcm(getAudioFormat(), std::move(callback));
   AudioEvents events(pcm);
   if (http.consume(
         response, [&](const uint8_t * bytes, size_t size) { return events.feed(bytes, size); })) {

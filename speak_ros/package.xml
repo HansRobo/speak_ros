@@ -17,6 +17,8 @@
     <depend>rclcpp_components</depend>
     <depend>pluginlib</depend>
     <depend>portaudio19-dev</depend>
+    <depend>libcpprest-dev</depend>
+    <depend>libssl-dev</depend>
 
     <test_depend>ament_lint_auto</test_depend>
     <test_depend>ament_cmake_clang_format</test_depend>

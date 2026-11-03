@@ -33,7 +33,7 @@ int main()
     int finals = 0;
     std::vector<uint8_t> bytes;
     speak_ros::AudioFormat format;
-    speak_ros_http::PcmStream pcm(format, [&](speak_ros::AudioChunk chunk) {
+    speak_ros::PcmStream pcm(format, [&](speak_ros::AudioChunk chunk) {
       ok = ok && chunk.data.size() % 2 == 0;
       bytes.insert(bytes.end(), chunk.data.begin(), chunk.data.end());
       finals += chunk.is_final;

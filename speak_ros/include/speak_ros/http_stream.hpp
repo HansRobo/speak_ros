@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SPEAK_ROS_HTTP__HTTP_STREAM_HPP_
-#define SPEAK_ROS_HTTP__HTTP_STREAM_HPP_
+#ifndef SPEAK_ROS__HTTP_STREAM_HPP_
+#define SPEAK_ROS__HTTP_STREAM_HPP_
 
 #include <cpprest/http_client.h>
 
 #include <speak_ros/audio_types.hpp>
 #include <thread>
 
-namespace speak_ros_http
+namespace speak_ros
 {
 constexpr size_t READ_SIZE = 4096;
 
@@ -53,5 +53,5 @@ private:
   std::atomic<bool> finished_{false};
   std::thread watcher_;
 };
-}  // namespace speak_ros_http
+}  // namespace speak_ros
 #endif

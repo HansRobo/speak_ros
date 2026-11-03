@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "speak_ros_http/http_stream.hpp"
+#include "speak_ros/http_stream.hpp"
 
 #include <chrono>
 
-namespace speak_ros_http
+namespace speak_ros
 {
 web::http::client::http_client_config streamingConfig()
 {
@@ -84,4 +84,4 @@ bool HttpStream::consume(
   cancel();
   return false;
 }
-}  // namespace speak_ros_http
+}  // namespace speak_ros

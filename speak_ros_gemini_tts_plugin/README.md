@@ -1,8 +1,8 @@
 # speak_ros_gemini_tts_plugin
 
 Gemini text-to-speech through the streaming Interactions API. The plugin converts
-inline audio events into the standard speak_ros PCM callback; the shared
-`speak_ros_http` package owns HTTP cancellation and PCM frame alignment.
+inline audio events into the standard speak_ros PCM callback; the `speak_ros`
+package provides shared HTTP cancellation and PCM frame alignment.
 
 ## Usage
 
