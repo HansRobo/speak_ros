@@ -160,6 +160,27 @@ void SpeakROS::executeGoal(std::shared_ptr<GoalHandle> goal_handle)
 
     bool synthesis_success = false;
     try {
+      std::atomic<bool> synthesis_finished{false};
+      std::thread cancel_monitor([&] {
+        while (!synthesis_finished.load()) {
+          if (goal_handle->is_canceling() || cancel_token->load()) {
+            cancel_token->store(true);
+            audio_queue_.flush();
+            return;
+          }
+          std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+      });
+      struct MonitorJoin
+      {
+        std::atomic<bool> & finished;
+        std::thread & thread;
+        ~MonitorJoin()
+        {
+          finished.store(true);
+          thread.join();
+        }
+      } monitor_join{synthesis_finished, cancel_monitor};
       plugin_->synthesize(
         goal->text,
         [this, &cancel_token](AudioChunk chunk) -> bool {

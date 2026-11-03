@@ -40,3 +40,15 @@ ros2 run speak_ros speak_ros_node --ros-args -p plugin_name:=voicevox_plugin::Vo
 source speak_ros_ws/install/setup.bash
 ros2 run speak_ros test_client "こんにちは"
 ```
+
+## Streaming synthesis
+
+The plugin checks `/engine_manifest` for `supported_features.streaming_synthesis.value`.
+Supported engines use `/streaming_synthesis`; older engines with a missing feature,
+`false`, or a missing manifest endpoint use `/synthesis`. Transport and malformed
+response errors are reported, rather than silently retried. No retry occurs after
+PCM output has started.
+
+`voicevox_plugin/segment_length` controls the engine's synthesis segment duration
+in seconds (positive finite number, default `0.3`). This is backend-specific; PCM
+callback and ROS chunk boundaries do not correspond to synthesis segments.
