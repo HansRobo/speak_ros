@@ -13,6 +13,7 @@
     <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
     <depend>speak_ros</depend>
+    <depend>speak_ros_http</depend>
     <depend>rclcpp</depend>
     <depend>pluginlib</depend>
     <depend>libcpprest-dev</depend>

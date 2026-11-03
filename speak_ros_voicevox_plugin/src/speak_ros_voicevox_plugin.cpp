@@ -14,11 +14,9 @@
 
 #include <cpprest/http_client.h>
 
-#include <chrono>
 #include <cmath>
-#include <thread>
 
-#include "speak_ros/wav_utils.hpp"
+#include "speak_ros_http/http_stream.hpp"
 #include "speak_ros_voicevox_plugin/voicevox_plugin.hpp"
 #include "wav_stream_decoder.hpp"
 
@@ -36,31 +34,7 @@ void voicevox_plugin::VoiceVoxPlugin::synthesize(
   speak_ros::CancelToken cancel_token)
 {
   const std::string base_url = "http://" + host_name + ":" + std::to_string(port);
-  web::http::client::http_client_config config;
-  config.set_chunksize(4096);
-  web::http::client::http_client client(base_url, config);
-  pplx::cancellation_token_source cancellation;
-  std::atomic<bool> finished{false};
-  // Keep cancellation effective while waiting for headers or body bytes.
-  std::thread watcher([&] {
-    while (!finished.load()) {
-      if (cancel_token && cancel_token->load()) {
-        cancellation.cancel();
-        return;
-      }
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
-  });
-  struct Join
-  {
-    std::atomic<bool> & finished;
-    std::thread & thread;
-    ~Join()
-    {
-      finished.store(true);
-      thread.join();
-    }
-  } join{finished, watcher};
+  speak_ros_http::HttpStream http(base_url, cancel_token);
   auto request = [&](
                    const web::http::method & method, const utility::string_t & uri,
                    const utility::string_t & body = utility::string_t()) {
@@ -69,7 +43,7 @@ void voicevox_plugin::VoiceVoxPlugin::synthesize(
     if (!body.empty()) {
       req.set_body(body, U("application/json"));
     }
-    return client.request(req, cancellation.get_token()).get();
+    return http.request(std::move(req));
   };
   bool streaming = false;
   auto manifest = request(web::http::methods::GET, U("/engine_manifest"));
@@ -116,21 +90,11 @@ void voicevox_plugin::VoiceVoxPlugin::synthesize(
   if (response.status_code() != web::http::status_codes::OK) {
     throw std::runtime_error("synthesis failed");
   }
-  auto input = response.body();
   WavStreamDecoder decoder(getAudioFormat(), std::move(callback));
-  uint8_t bytes[4096];
-  while (!(cancel_token && cancel_token->load())) {
-    const auto count = input.streambuf().getn(bytes, sizeof(bytes)).get();
-    if (count == 0) {
-      decoder.finish();
-      return;
-    }
-    if (!decoder.feed(bytes, count)) {
-      cancellation.cancel();
-      return;
-    }
+  if (http.consume(
+        response, [&](const uint8_t * bytes, size_t size) { return decoder.feed(bytes, size); })) {
+    decoder.finish();
   }
-  cancellation.cancel();
 }
 
 std::vector<speak_ros::Parameter> voicevox_plugin::VoiceVoxPlugin::getParametersDefault() const

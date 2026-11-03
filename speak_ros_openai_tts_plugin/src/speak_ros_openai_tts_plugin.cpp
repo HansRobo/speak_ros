@@ -14,10 +14,10 @@
 
 #include <cpprest/http_client.h>
 
-#include <chrono>
 #include <cstdlib>
-#include <thread>
 
+#include "speak_ros_http/http_stream.hpp"
+#include "speak_ros_http/pcm_stream.hpp"
 #include "speak_ros_openai_tts_plugin/openai_tts_plugin.hpp"
 
 speak_ros::AudioFormat openai_tts_plugin::OpenAITTSPlugin::getAudioFormat() const
@@ -53,13 +53,12 @@ void openai_tts_plugin::OpenAITTSPlugin::synthesize(
   }
 
   // Prepare HTTP POST request
-  web::http::client::http_client_config config;
+  auto config = speak_ros_http::streamingConfig();
   // Enable HTTPS certificate validation (required for production)
   config.set_validate_certificates(true);
-  config.set_chunksize(4096);
   config.set_max_redirects(0);
 
-  web::http::client::http_client client(base_url, config);
+  speak_ros_http::HttpStream http(base_url, cancel_token, config);
 
   // Build request body
   web::json::value body;
@@ -81,38 +80,9 @@ void openai_tts_plugin::OpenAITTSPlugin::synthesize(
   request.headers().set_content_type(U("application/json"));
   request.set_body(body);
 
-  pplx::cancellation_token_source cancellation;
-  std::atomic<bool> finished{false};
-  std::thread watcher([&] {
-    while (!finished.load()) {
-      if (cancel_token && cancel_token->load()) {
-        cancellation.cancel();
-        return;
-      }
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
-  });
-  struct Join
-  {
-    std::atomic<bool> & finished;
-    std::thread & thread;
-    ~Join()
-    {
-      finished.store(true);
-      thread.join();
-    }
-  } join{finished, watcher};
-  auto response_task = client.request(request, cancellation.get_token());
-
-  // Check for cancellation
-  if (cancel_token && cancel_token->load()) {
-    cancellation.cancel();
-    return;
-  }
-
   web::http::http_response response;
   try {
-    response = response_task.get();
+    response = http.request(std::move(request));
   } catch (const std::exception & e) {
     throw std::runtime_error(std::string("OpenAI TTS API request failed: ") + e.what());
   }
@@ -125,37 +95,11 @@ void openai_tts_plugin::OpenAITTSPlugin::synthesize(
     throw std::runtime_error(error_msg);
   }
 
-  auto input = response.body();
-  std::vector<uint8_t> pending;
-  uint8_t bytes[4096];
-  while (!(cancel_token && cancel_token->load())) {
-    const auto count = input.streambuf().getn(bytes, sizeof(bytes)).get();
-    if (cancel_token && cancel_token->load()) {
-      cancellation.cancel();
-      return;
-    }
-    if (count == 0) {
-      if (!pending.empty()) {
-        throw std::runtime_error("Incomplete PCM frame at end of OpenAI TTS response");
-      }
-      speak_ros::AudioChunk end;
-      end.is_final = true;
-      callback(std::move(end));
-      return;
-    }
-    pending.insert(pending.end(), bytes, bytes + count);
-    const size_t aligned = pending.size() - pending.size() % getAudioFormat().bytesPerFrame();
-    if (aligned) {
-      speak_ros::AudioChunk chunk;
-      chunk.data.assign(pending.begin(), pending.begin() + aligned);
-      pending.erase(pending.begin(), pending.begin() + aligned);
-      if (!callback(std::move(chunk))) {
-        cancellation.cancel();
-        return;
-      }
-    }
+  speak_ros_http::PcmStream pcm(getAudioFormat(), std::move(callback));
+  if (http.consume(
+        response, [&](const uint8_t * bytes, size_t size) { return pcm.feed(bytes, size); })) {
+    pcm.finish();
   }
-  cancellation.cancel();
 }
 
 std::vector<speak_ros::Parameter> openai_tts_plugin::OpenAITTSPlugin::getParametersDefault() const
