@@ -38,6 +38,7 @@ public:
     const std::unordered_map<std::string, std::variant<int, double, std::string>> & parameters)
     override;
 
+  double segment_length = 0.3;
   int speaker;
   std::string host_name;
   int port;

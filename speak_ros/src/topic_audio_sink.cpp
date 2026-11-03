@@ -14,6 +14,7 @@
 
 #include "speak_ros/topic_audio_sink.hpp"
 
+#include <chrono>
 #include <optional>
 #include <stdexcept>
 
@@ -36,6 +37,10 @@ void TopicAudioSink::play(
   AudioQueue & queue, CancelToken cancel_token, std::atomic<uint64_t> & played_samples)
 {
   played_samples.store(0);
+  static std::atomic<uint64_t> sequence{0};
+  const auto stream_id =
+    std::to_string(std::chrono::system_clock::now().time_since_epoch().count()) + "_" +
+    std::to_string(sequence.fetch_add(1));
 
   while (true) {
     if (cancel_token && cancel_token->load()) {
@@ -46,9 +51,11 @@ void TopicAudioSink::play(
       break;
     }
 
-    if (!chunk->data.empty()) {
+    if (!chunk->data.empty() || chunk->is_final) {
       speak_ros_interfaces::msg::AudioChunk msg;
       msg.timestamp = node_.now();
+      msg.stream_id = stream_id;
+      msg.is_final = chunk->is_final;
       msg.data = chunk->data;
       msg.sample_rate = format_.sample_rate;
       msg.channels = static_cast<uint8_t>(format_.channels);

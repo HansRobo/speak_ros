@@ -57,7 +57,10 @@ struct AudioChunk
 using CancelToken = std::shared_ptr<std::atomic<bool>>;
 
 /**
- * @brief Audio chunk callback
+ * @brief Frame-aligned PCM callback, independent of synthesis transport.
+ *
+ * Normal completion emits is_final (possibly with empty data). Chunk sizes and
+ * timing are unspecified. Cancellation/false stops production; failures throw.
  *
  * @param chunk Audio chunk
  * @return true=continue, false=abort request (e.g., queue full)
