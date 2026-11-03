@@ -1,0 +1,5 @@
+<library path="speak_ros_gemini_tts_plugin">
+  <class type="gemini_tts_plugin::GeminiTTSPlugin" base_class_type="speak_ros::SpeakROSPluginBase">
+    <description>Gemini Interactions TTS with incremental PCM output</description>
+  </class>
+</library>
