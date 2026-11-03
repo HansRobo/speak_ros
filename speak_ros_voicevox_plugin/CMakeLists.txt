@@ -18,8 +18,7 @@ pluginlib_export_plugin_description_file(speak_ros plugins.xml)
 
 if(BUILD_TESTING)
   find_package(Python3 REQUIRED COMPONENTS Interpreter)
-  add_executable(streaming_client test/streaming_client.cpp)
-  ament_target_dependencies(streaming_client rclcpp pluginlib speak_ros)
+  ament_auto_add_executable(streaming_client test/streaming_client.cpp)
   target_link_libraries(streaming_client ${PROJECT_NAME})
   add_test(NAME streaming_http COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/test/test_streaming_http.py $<TARGET_FILE:streaming_client>)

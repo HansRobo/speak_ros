@@ -26,6 +26,8 @@ int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
   auto node = std::make_shared<rclcpp::Node>("topic_sink_contract_test");
+  rclcpp::executors::SingleThreadedExecutor executor;
+  executor.add_node(node);
   speak_ros::TopicAudioSink sink(*node);
   using Message = speak_ros_interfaces::msg::AudioChunk;
   std::vector<Message> received;
@@ -35,7 +37,7 @@ int main(int argc, char ** argv)
   auto spin_until = [&](auto predicate) {
     const auto deadline = std::chrono::steady_clock::now() + 3s;
     while (!predicate() && std::chrono::steady_clock::now() < deadline) {
-      rclcpp::spin_some(node);
+      executor.spin_some();
       std::this_thread::sleep_for(5ms);
     }
     return predicate();
@@ -82,7 +84,7 @@ int main(int argc, char ** argv)
   token->store(true);
   sink.open(format);
   sink.play(cancelled_queue, token, played);
-  rclcpp::spin_some(node);
+  executor.spin_some();
   ok = ok && received.size() == 3 && played.load() == 0;
   rclcpp::shutdown();
   if (!ok) {
