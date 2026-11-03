@@ -28,7 +28,7 @@ You can configure your OpenAI API key in two ways:
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `model` | string | `"tts-1"` | TTS model to use: `tts-1` (fastest), `tts-1-hd` (high quality), `gpt-4o-mini-tts` (advanced) |
-| `voice` | string | `"alloy"` | Voice selection: `alloy`, `echo`, `fable`, `onyx`, `nova`, `shimmer` |
+| `voice` | string | `"nova"` | Voice selection: `alloy`, `echo`, `fable`, `onyx`, `nova`, `shimmer` |
 | `speed` | double | `1.0` | Playback speed (0.25 to 4.0) |
 | `instructions` | string | `""` | Style instructions for `gpt-4o-mini-tts` model (e.g., "Speak in a cheerful tone") |
 | `api_key` | string | `""` | OpenAI API key (overrides environment variable if set) |
@@ -78,3 +78,23 @@ ros2 run speak_ros speak_ros --ros-args \
 ## License
 
 See the main speak_ros package for license information.
+
+## Incremental PCM delivery
+
+The plugin reads the HTTP response incrementally and emits frame-aligned 24 kHz,
+mono, signed 16-bit little-endian PCM through the standard synthesis callback.
+Normal EOF emits an `is_final` marker, including for empty audio. Odd trailing
+bytes and interrupted responses fail without a normal completion marker or retry.
+Cancellation interrupts both response-header and response-body waits; a callback
+returning false stops the request. This bounds the plugin's PCM staging buffer,
+not cpprestsdk's internal HTTP buffering.
+
+`base_url` defaults to `https://api.openai.com`. It must be an HTTP(S) origin
+without a path, query, fragment, or user information; requests use
+`/v1/audio/speech`. Only configure trusted endpoints: the API key is sent there.
+Redirects are disabled and HTTPS certificate validation remains enabled.
+
+The HTTP integration tests use a local mock endpoint and dummy credentials;
+no live API calls are required. See the
+[OpenAI speech guide](https://developers.openai.com/api/docs/guides/text-to-speech)
+for the upstream streaming and PCM formats.
