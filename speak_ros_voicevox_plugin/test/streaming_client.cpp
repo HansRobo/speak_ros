@@ -85,6 +85,9 @@ int main(int argc, char ** argv)
   if (!valid) {
     return 3;
   }
+  if (mode == "early_error") {
+    return threw && finals == 0 && elapsed < 1.0 ? 0 : 9;
+  }
   if (mode == "error") {
     return threw && finals == 0 ? 0 : 4;
   }

@@ -17,7 +17,7 @@
 
 #include <algorithm>
 #include <cstring>
-#include <speak_ros/audio_types.hpp>
+#include <speak_ros/pcm_stream.hpp>
 #include <stdexcept>
 
 namespace voicevox_plugin
@@ -27,7 +27,7 @@ class WavStreamDecoder
 {
 public:
   WavStreamDecoder(speak_ros::AudioFormat format, speak_ros::AudioChunkCallback callback)
-  : format_(format), callback_(std::move(callback))
+  : format_(format), pcm_(format, std::move(callback))
   {
   }
 
@@ -88,20 +88,10 @@ public:
     if (buffer_.size() > remaining_) {
       fail("Unexpected bytes after PCM data");
     }
-    size_t count = std::min(buffer_.size(), size_t(4096));
-    count -= count % format_.bytesPerFrame();
-    while (count) {
-      speak_ros::AudioChunk chunk;
-      chunk.data.assign(buffer_.begin(), buffer_.begin() + count);
-      discard(count);
-      remaining_ -= count;
-      if (!callback_(std::move(chunk))) {
-        return false;
-      }
-      count = std::min(buffer_.size(), size_t(4096));
-      count -= count % format_.bytesPerFrame();
-    }
-    return true;
+    const bool accepted = pcm_.feed(buffer_.data(), buffer_.size());
+    remaining_ -= buffer_.size();
+    buffer_.clear();
+    return accepted;
   }
 
   void finish()
@@ -109,9 +99,7 @@ public:
     if (!data_ || remaining_ || !buffer_.empty() || received_ != expected_) {
       fail("Truncated WAV stream");
     }
-    speak_ros::AudioChunk end;
-    end.is_final = true;
-    callback_(std::move(end));
+    pcm_.finish();
   }
 
 private:
@@ -127,7 +115,7 @@ private:
   uint32_t u32(size_t offset) const { return u16(offset) | (uint32_t(u16(offset + 2)) << 16); }
   void discard(size_t size) { buffer_.erase(buffer_.begin(), buffer_.begin() + size); }
   speak_ros::AudioFormat format_;
-  speak_ros::AudioChunkCallback callback_;
+  speak_ros::PcmStream pcm_;
   std::vector<uint8_t> buffer_;
   uint64_t received_ = 0;
   uint64_t expected_ = 0;

@@ -89,6 +89,13 @@ def engine(scenario):
                     self.close_connection = True
                     self.connection.shutdown(socket.SHUT_WR)
                     return
+                if scenario == 'invalid_wav_pending':
+                    self.wfile.write(b'NOPE' + WAV[4:9000])
+                    self.wfile.flush()
+                    time.sleep(1.2)
+                    self.wfile.write(WAV[9000:])
+                    self.wfile.flush()
+                    return
                 if scenario == 'invalid_wav':
                     self.wfile.write(b'NOPE' + WAV[4:])
                     self.wfile.flush()
@@ -161,6 +168,9 @@ class StreamingHttpTest(unittest.TestCase):
         for scenario in ('truncated', 'invalid_wav', 'riff_short', 'riff_long'):
             with self.subTest(scenario=scenario):
                 self.run_case(scenario, 'error', '/streaming_synthesis')
+
+    def test_decoder_error_interrupts_pending_body(self):
+        self.run_case('invalid_wav_pending', 'early_error', '/streaming_synthesis')
 
     def test_cancel_interrupts_body_wait(self):
         self.run_case('cancel', 'cancel', '/streaming_synthesis')
