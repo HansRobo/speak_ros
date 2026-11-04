@@ -92,8 +92,6 @@ int main(int argc, char ** argv)
   if (canceller.joinable()) {
     canceller.join();
   }
-  std::cout << "bytes=" << bytes << " finals=" << finals << " first=" << first
-            << " elapsed=" << elapsed << " calls=" << calls << " threw=" << threw << '\n';
   if (!valid) {
     return 3;
   }
@@ -106,11 +104,7 @@ int main(int argc, char ** argv)
   if (mode == "abort") {
     return !threw && calls == 1 && finals == 0 && elapsed < 1.0 ? 0 : 6;
   }
-  if (threw || bytes != (mode == "empty" ? 0u : 12000u) || finals != 1) {
-    return 7;
-  }
-  if (mode == "early" && !(first >= 0 && first < 1.0)) {
-    return 8;
-  }
-  return 0;
+  const bool complete = !threw && bytes == (mode == "empty" ? 0u : 12000u) && finals == 1;
+  const bool timely = mode != "early" || (first >= 0 && first < 1.0);
+  return complete && timely ? 0 : 7;
 }

@@ -15,6 +15,7 @@
 #ifndef SPEAK_ROS_GEMINI_TTS_PLUGIN__AUDIO_EVENTS_HPP_
 #define SPEAK_ROS_GEMINI_TTS_PLUGIN__AUDIO_EVENTS_HPP_
 
+#include <cpprest/asyncrt_utils.h>
 #include <cpprest/json.h>
 
 #include <cctype>
@@ -86,53 +87,11 @@ private:
     return true;
   }
 
-  static int digit(char c)
-  {
-    if (c >= 'A' && c <= 'Z') {
-      return c - 'A';
-    }
-    if (c >= 'a' && c <= 'z') {
-      return c - 'a' + 26;
-    }
-    if (c >= '0' && c <= '9') {
-      return c - '0' + 52;
-    }
-    if (c == '+') {
-      return 62;
-    }
-    if (c == '/') {
-      return 63;
-    }
-    return -1;
-  }
-
   static std::vector<uint8_t> decode(const std::string & text)
   {
-    if (text.size() % 4) {
-      fail("Invalid Gemini audio base64 length");
-    }
-    std::vector<uint8_t> bytes;
-    bytes.reserve(text.size() / 4 * 3);
-    for (size_t i = 0; i < text.size(); i += 4) {
-      const int a = digit(text[i]);
-      const int b = digit(text[i + 1]);
-      const int c = digit(text[i + 2]);
-      const int d = digit(text[i + 3]);
-      const bool pad_c = text[i + 2] == '=';
-      const bool pad_d = text[i + 3] == '=';
-      if (
-        a < 0 || b < 0 || (!pad_c && c < 0) || (!pad_d && d < 0) || (pad_c && !pad_d) ||
-        ((pad_c || pad_d) && i + 4 != text.size()) || (pad_c && (b & 15)) ||
-        (pad_d && !pad_c && (c & 3))) {
-        fail("Invalid Gemini audio base64 encoding");
-      }
-      bytes.push_back(static_cast<uint8_t>((a << 2) | (b >> 4)));
-      if (!pad_c) {
-        bytes.push_back(static_cast<uint8_t>((b << 4) | (c >> 2)));
-      }
-      if (!pad_d) {
-        bytes.push_back(static_cast<uint8_t>((c << 6) | d));
-      }
+    const auto bytes = utility::conversions::from_base64(text);
+    if (utility::conversions::to_base64(bytes) != text) {
+      fail("Invalid Gemini audio base64 encoding");
     }
     return bytes;
   }
