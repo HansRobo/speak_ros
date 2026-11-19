@@ -22,6 +22,7 @@ The core package loads TTS plugins dynamically and manages the synthesis pipelin
 | `speak_ros_aivis_plugin` | Aivis Speech Engine TTS plugin (Japanese) |
 | `speak_ros_open_jtalk_plugin` | Open JTalk TTS plugin (Japanese) |
 | `speak_ros_openai_tts_plugin` | OpenAI TTS API plugin |
+| [`speak_ros_gemini_tts_plugin`](speak_ros_gemini_tts_plugin/README.md) | Gemini Interactions TTS plugin |
 | `speak_ros_voicevox_plugin` | VOICEVOX TTS plugin (Japanese) |
 
 ## Available Plugins
@@ -29,6 +30,7 @@ The core package loads TTS plugins dynamically and manages the synthesis pipelin
 - **Aivis Speech Engine** - VOICEVOX-compatible Japanese synthesis with emotion control
 - **Open JTalk** - Offline Japanese speech synthesis
 - **OpenAI TTS** - High-quality cloud-based synthesis via OpenAI API
+- **Gemini TTS** - Streaming cloud synthesis via the Gemini Interactions API
 - **VOICEVOX** - Japanese synthesis with diverse character voices
 
 ## Building
