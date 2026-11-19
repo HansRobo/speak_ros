@@ -56,6 +56,12 @@ def engine(scenario):
                 self.reply(b'[]')
             elif scenario == 'manifest_invalid_features':
                 self.reply(b'{"supported_features": []}')
+            elif scenario == 'manifest_invalid_feature_value':
+                self.reply(b'{"supported_features": {"streaming_synthesis": "yes"}}')
+            elif scenario in ('bool_enabled', 'bool_disabled'):
+                self.reply(json.dumps({
+                    'supported_features': {'streaming_synthesis': scenario == 'bool_enabled'},
+                }).encode())
             else:
                 features = {}
                 if scenario != 'missing':
@@ -149,16 +155,19 @@ class StreamingHttpTest(unittest.TestCase):
         self.run_case('early', 'early', '/streaming_synthesis')
 
     def test_supported_engine(self):
-        self.run_case('supported', endpoint='/streaming_synthesis')
+        for scenario in ('supported', 'bool_enabled'):
+            with self.subTest(scenario=scenario):
+                self.run_case(scenario, endpoint='/streaming_synthesis')
 
     def test_legacy_engines(self):
-        for scenario in ('missing', 'disabled', 'manifest404'):
+        for scenario in ('missing', 'disabled', 'bool_disabled', 'manifest404'):
             with self.subTest(scenario=scenario):
                 self.run_case(scenario, endpoint='/synthesis')
 
     def test_manifest_failures_are_not_legacy(self):
         for scenario in ('manifest500', 'manifest_invalid',
-                         'manifest_invalid_root', 'manifest_invalid_features'):
+                         'manifest_invalid_root', 'manifest_invalid_features',
+                         'manifest_invalid_feature_value'):
             with self.subTest(scenario=scenario):
                 requests = self.run_case(scenario, 'error')
                 self.assertNotIn('/synthesis', requests)

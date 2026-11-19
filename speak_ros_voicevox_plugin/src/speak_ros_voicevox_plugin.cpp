@@ -61,7 +61,16 @@ void voicevox_plugin::VoiceVoxPlugin::synthesize(
         throw std::runtime_error("Invalid supported_features");
       }
       if (features.has_field(U("streaming_synthesis"))) {
-        streaming = features.at(U("streaming_synthesis")).at(U("value")).as_bool();
+        auto feature = features.at(U("streaming_synthesis"));
+        if (feature.is_boolean()) {
+          streaming = feature.as_bool();
+        } else if (
+          feature.is_object() && feature.has_field(U("value")) &&
+          feature.at(U("value")).is_boolean()) {
+          streaming = feature.at(U("value")).as_bool();
+        } else {
+          throw std::runtime_error("Invalid streaming_synthesis feature");
+        }
       }
     }
   }
